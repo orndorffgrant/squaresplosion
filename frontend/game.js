@@ -58,7 +58,6 @@ function addBot() {
     }
     bot = new component(25, 25, "#000000", botXY[0], botXY[1], "bot");
     bots.push(bot);
-    updateGameArea();
     if (bots.length == 1) {
         setInterval(function() {moveBots()}, 250);
     }
@@ -123,7 +122,6 @@ function moveBots() {
                 break;
         }
     }
-    updateGameArea();
 }
 
 /**
