@@ -95,31 +95,40 @@ function getBotValidPosition() {
  *   Generates a random number between 0 and 4. Each number means a different move. 
  */
 function moveBots() {
+    var moved;
     for (var i = 0; i < bots.length; i++) {
+        moved = false;
         move = Math.floor(Math.random() * 5);
         switch(move) {
             case 0:
                 if (bots[i].y - 25 >= 0) {
-                    bots[i].speedY -= 25;
+                    bots[i].y -= 25;
+                    moved = true;
                 }
                 break;
             case 1:
                 if (bots[i].y + 25 <= gameMat.canvas.height - 25) {
-                    bots[i].speedY += 25;
+                    bots[i].y += 25;
+                    moved = true;
                 }
                 break;
             case 2:
                 if (bots[i].x - 25 >= 0) {
-                    bots[i].speedX -= 25;
+                    bots[i].x -= 25;
+                    moved = true;
                 }
                 break;
             case 3:
                 if (bots[i].x + 25 <= gameMat.canvas.width - 25) {
-                    bots[i].speedX += 25;
+                    bots[i].x += 25;
+                    moved = true;
                 }
                 break;           
             default:
                 break;
+        }
+        if (moved) {
+            sendLocation(bots[i].id, bots[i].x, bots[i].y);
         }
     }
 }
@@ -135,21 +144,16 @@ function moveBots() {
  *   @param string playerType 
  */
 function component(width, height, color, x, y, playerType) {
+    this.id = createCharacterId();
     this.playerType = playerType;
     this.width = width;
     this.height = height;
-    this.speedX = 0;
-    this.speedY = 0;
     this.x = x;
     this.y = y;
     this.update = function() {
         ctx = gameMat.context;
         ctx.fillStyle = color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-    this.newPos = function() {
-        this.x = x + this.speedX;
-        this.y = y + this.speedY;
     }
 }
 
@@ -159,10 +163,8 @@ function component(width, height, color, x, y, playerType) {
  */
 function updateGameArea() {
     gameMat.clear();
-    character.newPos();
     character.update();
     bots.forEach(bot => {
-        bot.newPos();
         bot.update();
     });
 }
@@ -173,30 +175,53 @@ function updateGameArea() {
  */
 function addListener() {
     document.addEventListener("keydown", function(e) {
+        var moved = false;
         switch(e.key) {
             case "w":
                 if (character.y - 25 >= 0) {
-                    character.speedY -= 25;
+                    character.y -= 25;
+                    moved = true;
                 }
                 break;
             case "s":
                 if (character.y + 25 <= gameMat.canvas.height - 25) {
-                    character.speedY += 25;
+                    character.y += 25;
+                    moved = true;
                 }
                 break;
             case "a":
                 if (character.x - 25 >= 0) {
-                    character.speedX -= 25;
+                    character.x -= 25;
+                    moved = true;
                 }
                 break;
             case "d":
                 if (character.x + 25 <= gameMat.canvas.width - 25) {
-                    character.speedX += 25;
+                    character.x += 25;
+                    moved = true;
                 }
                 break;            
             default:
                 break;
         }
+        if (moved) { 
+            sendLocation(character.id, character.x, character.y);
+        }
     })
+}
+
+
+/**
+ * createCharacterId
+ * Creates a UUID for a character.
+ */
+function createCharacterId(){
+    var dt = new Date().getTime();
+    var uuid = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+    return uuid;
 }
 
