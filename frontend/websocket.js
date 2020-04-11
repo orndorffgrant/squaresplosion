@@ -27,7 +27,7 @@ function sendLocation(charId, xPos, yPos){
         console.error("Not connected");
         return;
     }
-    ws.send({id: charId, x: xPos, y: yPos});
+    ws.send(JSON.stringify({id: charId, x: xPos, y: yPos}));
 }
 
 /**
