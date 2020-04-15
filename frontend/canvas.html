@@ -3,7 +3,9 @@
     <head>
         <title>Squaresplotion</title>
         <script type="text/javascript" src="game.js"></script>
+        <script type="text/javascript" src="general.js"></script>
         <link rel="stylesheet" type="text/css" href="styles.css">
+        <link href="fontawesome/css/all.css" rel="stylesheet">
         <meta charset="utf-8"/>
     </head>
     
@@ -13,7 +15,22 @@
                 Your browser does not support this.
             </canvas>
         </div>
-        <button onClick="addBot()">Add Bot</button>
+        <div id="optionsWrapper">
+            <div class="option" id="darkmodeSlider">
+                <i class="fas fa-sun"></i>
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleDarkMode()" autocomplete="off">
+                    <span class="slider"></span>
+                </label>
+                <i class="fas fa-moon"></i>
+            </div>
+            <div class="option">
+                <button onClick="addBot()">
+                    <i class="fas fa-robot"></i> Add Bot
+                </button>
+            </div>
+        </div>
+        
         
     </body>
 </html>

@@ -1,6 +1,7 @@
 var character;
 var bots = [];
 var gameMat;
+var darkmode = false;
 
 /**
  * createGameMat
@@ -56,7 +57,11 @@ function addBot() {
     while (botXY.length == 0) {
         botXY = getBotValidPosition();
     }
-    bot = new component(25, 25, "#000000", botXY[0], botXY[1], "bot");
+    botColor = "#000000";
+    if (darkmode) {
+        botColor = "#FFFFFF";
+    }
+    bot = new component(25, 25, botColor, botXY[0], botXY[1], "bot");
     bots.push(bot);
     if (bots.length == 1) {
         setInterval(function() {moveBots()}, 250);
@@ -136,6 +141,7 @@ function moveBots() {
  */
 function component(width, height, color, x, y, playerType) {
     this.playerType = playerType;
+    this.color = color;
     this.width = width;
     this.height = height;
     this.speedX = 0;
@@ -144,7 +150,7 @@ function component(width, height, color, x, y, playerType) {
     this.y = y;
     this.update = function() {
         ctx = gameMat.context;
-        ctx.fillStyle = color;
+        ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
     this.newPos = function() {
