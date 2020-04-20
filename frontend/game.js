@@ -129,6 +129,7 @@ function moveBots() {
         }
         if (moved) {
             sendLocation(bots[i].id, bots[i].x, bots[i].y);
+            bots[i].lastMoveTime = Date.now();
         }
     }
 }
@@ -148,8 +149,10 @@ function component(width, height, color, x, y, playerType) {
     this.playerType = playerType;
     this.width = width;
     this.height = height;
+    this.lastMoveTime = Date.now();
     this.x = x;
     this.y = y;
+    this.active = true;
     this.update = function() {
         ctx = gameMat.context;
         ctx.fillStyle = color;
@@ -167,6 +170,44 @@ function updateGameArea() {
     bots.forEach(bot => {
         bot.update();
     });
+    checkCollisions();
+}
+
+function removePlayer(id, type) {
+    if (type == "bot") {
+        for (var i = 0; i < bots.length; i++) {
+            if (bots[i].id == id) {
+                console.log(bots.splice(i, 1));
+                return true;
+            }
+        }
+    } else if (type == "player") {
+        alert("YOU LOSE!")
+    }
+}
+
+function checkCollisions() {
+    var allPlayers = bots.slice(0);
+    allPlayers.push(character);
+    //console.log(allPlayers);
+    for (var j = 0; j < allPlayers.length; j++) {
+        var player = allPlayers[j];
+        if (!player.active) {
+            continue;
+        }
+        for (var i = 0; i < allPlayers.length; i++) {
+            if (i == j || !allPlayers[i].active) {
+                continue;
+            }
+            if (player.x == allPlayers[i].x && player.y == allPlayers[i].y) {
+                if (player.lastMoveTime > allPlayers[i].lastMoveTime) {
+                    removePlayer(allPlayers[i].id, allPlayers[i].playerType);
+                    console.log(player.id + " collided with " + allPlayers[i].id + ". " + allPlayers[i].id + " is out");
+                    allPlayers[i].active = false;
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -176,6 +217,8 @@ function updateGameArea() {
 function addListener() {
     document.addEventListener("keydown", function(e) {
         var moved = false;
+        var currentX = character.x;
+        var currentY = character.y;
         switch(e.key) {
             case "w":
                 if (character.y - 25 >= 0) {
@@ -206,6 +249,7 @@ function addListener() {
         }
         if (moved) { 
             sendLocation(character.id, character.x, character.y);
+            character.lastMoveTime = Date.now();
         }
     })
 }
