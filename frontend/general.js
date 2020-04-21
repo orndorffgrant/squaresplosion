@@ -1,31 +1,43 @@
+/**
+ * toggleDarkMode
+ *   Toggles the dark mode based on the classes attached to the body. 
+ */
 function toggleDarkMode() {
-    if (!document.getElementById("darkmodecss")) {
-        enableDarkMode();
+    var body = document.getElementsByTagName("body")[0];
+    if (!body.classList.contains("darkmode")) {
+        //Enables dark mode
+        body.classList.add("darkmode");
+        darkmode = true; //used in game.js
+
+        bots.forEach(bot => {
+            bot.color = "#FFFFFF";
+        });
+        document.getElementById("darkmodeSlider").classList.add("on");
     } else {
-        disableDarkMode();
+        //Disables dark mode
+        body.classList.remove("darkmode");
+        darkmode = false; //used in game.js
+        bots.forEach(bot => {
+            bot.color = "#000000";
+        });
+        document.getElementById("darkmodeSlider").classList.remove("on");
     }
 }
 
-function enableDarkMode() {
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.type = "text/css";
-    link.href = "darkmode.css";
-    link.id = "darkmodecss";
-    document.getElementsByTagName("HEAD")[0].appendChild(link);
-    darkmode = true; //used in game.js
-
-    bots.forEach(bot => {
-        bot.color = "#FFFFFF";
-    });
-    document.getElementById("darkmodeSlider").classList.add("on");
+//Toggles dark mode based on user preferences. 
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.getElementById("darkModeCheckbox").click();
 }
 
-function disableDarkMode() {
-    document.getElementById("darkmodecss").remove();
-    darkmode = false;
-    bots.forEach(bot => {
-        bot.color = "#000000";
-    });
-    document.getElementById("darkmodeSlider").classList.remove("on");
-}
+window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
+    if (e.matches) {
+      if (document.getElementById("darkModeCheckbox").value == "off") {
+        document.getElementById("darkModeCheckbox").click();
+      }
+    } else {
+        if (document.getElementById("darkModeCheckbox").value == "on") {
+            document.getElementById("darkModeCheckbox").click();
+        }
+    }
+  });
+//End of dark mode toggling. 

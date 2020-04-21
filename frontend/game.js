@@ -29,7 +29,7 @@ function createGameMat() {
  *   return string (the color)
  */
 function getRandomColor() {
-    colors = ["#4287f5", "#4287f5", "#f542a4", "#f54242","#f59942", "#93f542", "#42f5e3"]
+    colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"]
     return colors[Math.floor(Math.random() * 7)]
   }
 

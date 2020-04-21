@@ -22,8 +22,7 @@
     right: 0;
     bottom: 0;
     background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s;
+   
   }
   
   .slider:before {
@@ -34,8 +33,7 @@
     left: 4px;
     bottom: 4px;
     background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
+    
   }
   
   input:checked + .slider {
@@ -71,4 +69,23 @@
 
 #darkmodeSlider label, #darkmodeSlider i {
     vertical-align: middle;
+}
+
+body {
+  background-color: whitesmoke;
+}
+
+body.darkmode {
+  background-color: #363636 !important;
+}
+
+.icon.md {
+  height:20px;
+  display:inline-block;
+  position: relative;
+  vertical-align: middle;
+}
+
+.icon.darktheme {
+  color:white;
 }

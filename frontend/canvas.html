@@ -2,11 +2,8 @@
 <html>
     <head>
         <title>Squaresplotion</title>
-        <script type="text/javascript" src="game.js"></script>
-        <script type="text/javascript" src="general.js"></script>
-        <script type="text/javascript" src="websocket.js"></script>
         <link rel="stylesheet" type="text/css" href="styles.css">
-        <link href="fontawesome/css/all.css" rel="stylesheet">
+        <link href="fontawesome/css/all.min.css" rel="stylesheet">
         <meta charset="utf-8"/>
     </head>
     
@@ -18,20 +15,26 @@
         </div>
         <div id="optionsWrapper">
             <div class="option" id="darkmodeSlider">
-                <i class="fas fa-sun"></i>
+                <svg>
+                    <img src="fontawesome/svgs/regular/sun.svg" class="icon md darktheme"/>
+                </svg>
+                
                 <label class="switch">
-                    <input type="checkbox" onclick="toggleDarkMode()" autocomplete="off">
+                    <input type="checkbox" id="darkModeCheckbox" onchange="toggleDarkMode()" autocomplete="off">
                     <span class="slider"></span>
                 </label>
-                <i class="fas fa-moon"></i>
+                <img src="fontawesome/svgs/regular/moon.svg" class="icon md"/>
             </div>
             <div class="option">
                 <button onClick="addBot()">
-                    <i class="fas fa-robot"></i> Add Bot
+                    <img src="fontawesome/svgs/solid/robot.svg" class="icon md"/> Add Bot
                 </button>
             </div>
         </div>
         
         
     </body>
+    <script type="text/javascript" src="game.js"></script>
+    <script type="text/javascript" src="general.js"></script>
+    <script type="text/javascript" src="websocket.js"></script>
 </html>
