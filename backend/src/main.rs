@@ -1,18 +1,45 @@
 use std::io::Error;
+use std::sync::Arc;
+
 use async_std::net::{TcpListener, TcpStream};
+use async_std::sync::Mutex;
 use async_std::task;
+
+use async_tungstenite::tungstenite;
+use async_tungstenite::tungstenite::protocol::Message;
+use async_tungstenite::WebSocketStream;
+
 use futures::prelude::*;
+use futures::stream::SplitSink;
 
-async fn accept_connection(stream: TcpStream) {
-    let peer_addr = stream.peer_addr().expect("peer should have address");
-    println!("New connection from {}", peer_addr);
+struct Connection {
+    id: u64,
+    outgoing: SplitSink<WebSocketStream<TcpStream>, Message>,
+}
 
-    let ws_stream = async_tungstenite::accept_async(stream).await.expect("error during ws handshake");
-    println!("Successful WS handshake");
+async fn accept_connection(id: u64, conns: Arc<Mutex<Vec<Connection>>>, stream: TcpStream) -> Result<(), tungstenite::error::Error> {
+    let ws_stream = async_tungstenite::accept_async(stream).await?;
+    println!("New conn {}", id);
 
-    let (write, read) = ws_stream.split();
+    let (outgoing, mut incoming) = ws_stream.split();
 
-    read.forward(write).await.expect("failed to forward message back to sender");
+    conns.lock().await.push(Connection{id, outgoing});
+
+    while let Some(msg) = incoming.next().await {
+        let m = msg?;
+        let mut i = 0;
+        // Def room for race conditions and OOB indexing here
+        let conns_len = conns.lock().await.len();
+        while i < conns_len {
+            let c = &mut conns.lock().await[i];
+            if c.id != id {
+                c.outgoing.send(m.clone()).await?;
+            }
+            i = i + 1;
+        }
+    }
+
+    Ok(())
 }
 
 async fn run() -> Result<(), Error> {
@@ -21,8 +48,12 @@ async fn run() -> Result<(), Error> {
     let server = TcpListener::bind(&server_addr).await.expect("failed to bind to addr");
     println!("Listening on {}", server_addr);
 
+    let mut curr_id = 0;
+    let conns = Arc::new(Mutex::new(Vec::new()));
+
     while let Ok((stream, _)) = server.accept().await {
-        task::spawn(accept_connection(stream));
+        curr_id = curr_id + 1;
+        task::spawn(accept_connection(curr_id, conns.clone(), stream));
     }
 
     Ok(())
