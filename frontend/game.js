@@ -129,7 +129,7 @@ function moveBots() {
         }
         if (moved) {
             sendLocation(bots[i].id, bots[i].x, bots[i].y);
-            bots[i].lastMoveTime = Date.now();
+            bots[i].lastMoveTime = (new Date()).getTime();
         }
     }
 }
@@ -149,7 +149,7 @@ function component(width, height, color, x, y, playerType) {
     this.playerType = playerType;
     this.width = width;
     this.height = height;
-    this.lastMoveTime = Date.now();
+    this.lastMoveTime = (new Date()).getTime();
     this.x = x;
     this.y = y;
     this.active = true;
@@ -166,26 +166,41 @@ function component(width, height, color, x, y, playerType) {
  */
 function updateGameArea() {
     gameMat.clear();
-    character.update();
+    if (character.active) {
+        character.update();
+    }
     bots.forEach(bot => {
         bot.update();
     });
     checkCollisions();
 }
 
-function removePlayer(id, type) {
-    if (type == "bot") {
-        for (var i = 0; i < bots.length; i++) {
-            if (bots[i].id == id) {
-                console.log(bots.splice(i, 1));
-                return true;
+/**
+ * removePlayers
+ * Removes a list of players from the game.
+ * @param list players : list of players to remove
+ */
+function removePlayers(players) {
+    players.forEach(player => {
+        if (player.playerType == "bot") {
+            for (var i = 0; i < bots.length; i++) {
+                if (bots[i].id == player.id) {
+                    bots.splice(i, 1);
+                    return true;
+                }
             }
+        } else if (player.playerType == "player") {
+            character.active = false;
+            alert("YOU LOSE!")
         }
-    } else if (type == "player") {
-        alert("YOU LOSE!")
-    }
+    });
+    
 }
 
+/**
+ * checkCollisiions()
+ * Checks to see if any players collided. 
+ */
 function checkCollisions() {
     var allPlayers = bots.slice(0);
     allPlayers.push(character);
@@ -201,9 +216,12 @@ function checkCollisions() {
             }
             if (player.x == allPlayers[i].x && player.y == allPlayers[i].y) {
                 if (player.lastMoveTime > allPlayers[i].lastMoveTime) {
-                    removePlayer(allPlayers[i].id, allPlayers[i].playerType);
+                    removePlayers([allPlayers[i]]);
                     console.log(player.id + " collided with " + allPlayers[i].id + ". " + allPlayers[i].id + " is out");
-                    allPlayers[i].active = false;
+                }
+                if (player.lastMoveTime == allPlayers[i].lastMoveTime) {
+                    removePlayers([allPlayers[i], player]);
+                    console.log(player.id + " collided with " + allPlayers[i].id + ". " + "Both players are out!");
                 }
             }
         }
@@ -217,8 +235,6 @@ function checkCollisions() {
 function addListener() {
     document.addEventListener("keydown", function(e) {
         var moved = false;
-        var currentX = character.x;
-        var currentY = character.y;
         switch(e.key) {
             case "w":
                 if (character.y - 25 >= 0) {
@@ -249,7 +265,7 @@ function addListener() {
         }
         if (moved) { 
             sendLocation(character.id, character.x, character.y);
-            character.lastMoveTime = Date.now();
+            character.lastMoveTime = (new Date()).getTime();
         }
     })
 }
