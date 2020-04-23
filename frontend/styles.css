@@ -75,8 +75,20 @@ body {
   background-color: whitesmoke;
 }
 
+button {
+  padding: 5px;
+}
+
 body.darkmode {
-  background-color: #363636 !important;
+  background-color: #363636;
+  color: white;
+}
+
+body.darkmode button {
+  color: white;
+  border-color: #67747e;
+  background-color: #3a4045;
+  border-radius: 4px;
 }
 
 .icon.md {
@@ -87,5 +99,5 @@ body.darkmode {
 }
 
 .icon.darktheme {
-  color:white;
+  filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg) brightness(103%) contrast(103%);
 }

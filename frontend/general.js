@@ -4,9 +4,14 @@
  */
 function toggleDarkMode() {
     var body = document.getElementsByTagName("body")[0];
+    var icons = document.getElementsByClassName('icon');
     if (!body.classList.contains("darkmode")) {
         //Enables dark mode
         body.classList.add("darkmode");
+        
+        for (var i = 0; i < icons.length; i++) {
+            icons[i].classList.add("darktheme");
+        }
         darkmode = true; //used in game.js
 
         bots.forEach(bot => {
@@ -16,6 +21,9 @@ function toggleDarkMode() {
     } else {
         //Disables dark mode
         body.classList.remove("darkmode");
+        for (var i = 0; i < icons.length; i++) {
+            icons[i].classList.remove("darktheme");
+        }
         darkmode = false; //used in game.js
         bots.forEach(bot => {
             bot.color = "#000000";
