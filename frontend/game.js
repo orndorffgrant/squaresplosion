@@ -59,7 +59,7 @@ function addBot() {
     bot = new component(25, 25, "#000000", botXY[0], botXY[1], "bot");
     bots.push(bot);
     if (bots.length == 1) {
-        setInterval(function() {moveBots()}, 250);
+        setInterval(function() {moveBots()}, 50);
     }
 }
 
@@ -98,29 +98,38 @@ function moveBots() {
     var moved;
     for (var i = 0; i < bots.length; i++) {
         moved = false;
-        move = Math.floor(Math.random() * 5);
+        const cont = Math.floor(Math.random() * 2) === 0;
+        if (cont) {
+            move = bots[i].lastmove;
+        } else {
+            move = Math.floor(Math.random() * 5);
+        }
         switch(move) {
             case 0:
                 if (bots[i].y - 25 >= 0) {
                     bots[i].y -= 25;
+                    bots[i].lastmove = move;
                     moved = true;
                 }
                 break;
             case 1:
                 if (bots[i].y + 25 <= gameMat.canvas.height - 25) {
                     bots[i].y += 25;
+                    bots[i].lastmove = move;
                     moved = true;
                 }
                 break;
             case 2:
                 if (bots[i].x - 25 >= 0) {
                     bots[i].x -= 25;
+                    bots[i].lastmove = move;
                     moved = true;
                 }
                 break;
             case 3:
                 if (bots[i].x + 25 <= gameMat.canvas.width - 25) {
                     bots[i].x += 25;
+                    bots[i].lastmove = move;
                     moved = true;
                 }
                 break;           
