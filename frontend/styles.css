@@ -98,6 +98,6 @@ body.darkmode button {
   vertical-align: middle;
 }
 
-.icon.darktheme {
+body.darkmode .icon {
   filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg) brightness(103%) contrast(103%);
 }

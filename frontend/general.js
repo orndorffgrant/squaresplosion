@@ -9,9 +9,6 @@ function toggleDarkMode() {
         //Enables dark mode
         body.classList.add("darkmode");
         
-        for (var i = 0; i < icons.length; i++) {
-            icons[i].classList.add("darktheme");
-        }
         darkmode = true; //used in game.js
 
         bots.forEach(bot => {
@@ -21,9 +18,7 @@ function toggleDarkMode() {
     } else {
         //Disables dark mode
         body.classList.remove("darkmode");
-        for (var i = 0; i < icons.length; i++) {
-            icons[i].classList.remove("darktheme");
-        }
+        
         darkmode = false; //used in game.js
         bots.forEach(bot => {
             bot.color = "#000000";
@@ -39,13 +34,23 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 
 window.matchMedia('(prefers-color-scheme: dark)').addListener(e => {
     if (e.matches) {
-      if (document.getElementById("darkModeCheckbox").value == "off") {
-        document.getElementById("darkModeCheckbox").click();
-      }
-    } else {
-        if (document.getElementById("darkModeCheckbox").value == "on") {
+        if (!document.getElementById("darkModeCheckbox").checked) {
             document.getElementById("darkModeCheckbox").click();
         }
     }
-  });
+});
+window.matchMedia('(prefers-color-scheme: light)').addListener(e => {
+    if (e.matches) {
+        if (document.getElementById("darkModeCheckbox").checked) {
+            document.getElementById("darkModeCheckbox").click();
+        }
+    }
+});
+window.matchMedia('(prefers-color-scheme: no-preference)').addListener(e => {
+    if (e.matches) {
+        if (document.getElementById("darkModeCheckbox").checked) {
+            document.getElementById("darkModeCheckbox").click();
+        }
+    }
+});
 //End of dark mode toggling. 
