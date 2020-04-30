@@ -1,6 +1,7 @@
 var character;
 var bots = [];
 var gameMat;
+var darkmode = false;
 
 /**
  * createGameMat
@@ -28,7 +29,7 @@ function createGameMat() {
  *   return string (the color)
  */
 function getRandomColor() {
-    colors = ["#4287f5", "#4287f5", "#f542a4", "#f54242","#f59942", "#93f542", "#42f5e3"]
+    colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"]
     return colors[Math.floor(Math.random() * 7)]
   }
 
@@ -56,7 +57,11 @@ function addBot() {
     while (botXY.length == 0) {
         botXY = getBotValidPosition();
     }
-    bot = new component(25, 25, "#000000", botXY[0], botXY[1], "bot");
+    botColor = "#000000";
+    if (darkmode) {
+        botColor = "#FFFFFF";
+    }
+    bot = new component(25, 25, botColor, botXY[0], botXY[1], "bot");
     bots.push(bot);
     if (bots.length == 1) {
         setInterval(function() {moveBots()}, 50);
@@ -156,6 +161,7 @@ function moveBots() {
 function component(width, height, color, x, y, playerType) {
     this.id = createCharacterId();
     this.playerType = playerType;
+    this.color = color;
     this.width = width;
     this.height = height;
     this.lastMoveTime = (new Date()).getTime();
@@ -164,7 +170,7 @@ function component(width, height, color, x, y, playerType) {
     this.active = true;
     this.update = function() {
         ctx = gameMat.context;
-        ctx.fillStyle = color;
+        ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
