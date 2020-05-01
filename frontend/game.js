@@ -173,6 +173,23 @@ function component(width, height, color, x, y, playerType) {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
+    this.explodeParticles = function() {
+        var particles = [];
+        for (var i = 0; i < width; i++) {
+            randomI = Math.floor(Math.random() * 100);
+            for (var j = 0; j < height; j++) {
+                randomJ = Math.floor(Math.random() * 100);
+                ctx = gameMat.context;
+                ctx.fillStyle = color;
+                ctx.fillRect(x+randomI+i, y+randomJ+j, 1, 1);
+            }
+        }
+    }
+    this.explode = function() {
+        this.active = false;
+        //this.explodeParticles();
+        console.log("explode");
+    }
 }
 
 /**
@@ -183,6 +200,8 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
+    } else {
+        character.explodeParticles();
     }
     bots.forEach(bot => {
         bot.update();
@@ -200,13 +219,13 @@ function removePlayers(players) {
         if (player.playerType == "bot") {
             for (var i = 0; i < bots.length; i++) {
                 if (bots[i].id == player.id) {
+                    bots[i].explode();
                     bots.splice(i, 1);
                     return true;
                 }
             }
         } else if (player.playerType == "player") {
-            character.active = false;
-            alert("YOU LOSE!")
+            character.explode();
         }
     });
     

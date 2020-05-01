@@ -53,4 +53,9 @@ window.matchMedia('(prefers-color-scheme: no-preference)').addListener(e => {
         }
     }
 });
-//End of dark mode toggling. 
+//End of dark mode toggling.
+ 
+
+function explode() {
+    character.explode();
+}
