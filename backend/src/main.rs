@@ -1,6 +1,3 @@
-#![recursion_limit="1024"]
-#![type_length_limit="1499843"]
-
 use async_std::{
     net::{TcpListener, TcpStream},
     task,
@@ -9,14 +6,17 @@ use async_std::{
 use async_tungstenite::{
     tungstenite::protocol::Message,
     WebSocketStream,
+    accept_async,
 };
 
 use futures::{
     channel::mpsc,
     select,
-    SinkExt,
-    StreamExt,
-    stream::SplitSink,
+    sink::SinkExt,
+    stream::{
+        StreamExt,
+        SplitSink,
+    },
     FutureExt,
 };
 
@@ -32,6 +32,7 @@ type ChannelSender<T> = mpsc::UnboundedSender<T>;
 type ChannelReceiver<T> = mpsc::UnboundedReceiver<T>;
 type WebSocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
 
+#[derive(Debug)]
 enum Void {}
 
 fn main() -> Result<()> {
@@ -53,7 +54,7 @@ async fn run_task() -> Result<()> {
     let mut incoming = server.incoming();
 
     while let Some(stream) = incoming.next().await {
-        spawn_and_log_error(connection_task(stream?, event_broker_sender.clone(), curr_conn_id));
+        task::spawn(connection_task(stream?, event_broker_sender.clone(), curr_conn_id));
         curr_conn_id += 1;
     }
 
@@ -131,7 +132,7 @@ async fn connection_task(
     conn_id: usize,
 ) -> Result<()> {
     let peer_addr = stream.peer_addr()?;
-    let ws_stream = async_tungstenite::accept_async(stream).await?;
+    let ws_stream = accept_async(stream).await?;
     println!("New conn ({}) from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
