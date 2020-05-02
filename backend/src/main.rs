@@ -131,25 +131,49 @@ async fn connection_task(
     mut event_broker: ChannelSender<Event>,
     conn_id: usize,
 ) -> Result<()> {
-    let peer_addr = stream.peer_addr()?;
-    let ws_stream = accept_async(stream).await?;
+    let peer_addr = match stream.peer_addr() {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
+    let ws_stream = match accept_async(stream).await {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
     println!("New conn ({}) from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
 
     let (_connection_shutdown_sender, connection_shutdown_receiver) = mpsc::unbounded::<Void>();
 
-    event_broker.send(Event::NewConnection{
+    match event_broker.send(Event::NewConnection{
         id: conn_id,
         ws_sender: outgoing,
         shutdown_receiver: connection_shutdown_receiver,
-    }).await?;
+    }).await {
+        Ok(h) => h,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
 
     while let Some(msg) = incoming.next().await {
-        event_broker.send(Event::Message{
+        match event_broker.send(Event::Message{
             from_id: conn_id,
             msg: msg?,
-        }).await?;
+        }).await {
+            Ok(h) => h,
+            Err(e) => {
+                eprintln!("{}", e);
+                return Ok(())
+            }
+        }
     }
 
     Ok(())
