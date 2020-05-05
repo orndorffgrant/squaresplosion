@@ -1,64 +1,214 @@
-use std::io::Error;
-use std::sync::Arc;
+use async_std::{
+    net::{TcpListener, TcpStream},
+    task,
+};
 
-use async_std::net::{TcpListener, TcpStream};
-use async_std::sync::Mutex;
-use async_std::task;
+use async_tungstenite::{
+    tungstenite::protocol::Message,
+    WebSocketStream,
+    accept_async,
+};
 
-use async_tungstenite::tungstenite;
-use async_tungstenite::tungstenite::protocol::Message;
-use async_tungstenite::WebSocketStream;
+use futures::{
+    channel::mpsc,
+    select,
+    sink::SinkExt,
+    stream::{
+        StreamExt,
+        SplitSink,
+    },
+    FutureExt,
+};
 
-use futures::prelude::*;
-use futures::stream::SplitSink;
+use std::{
+    collections::hash_map::{Entry, HashMap},
+    error::Error,
+};
 
-struct Connection {
-    id: u64,
-    outgoing: SplitSink<WebSocketStream<TcpStream>, Message>,
+
+type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+type ChannelSender<T> = mpsc::UnboundedSender<T>;
+type ChannelReceiver<T> = mpsc::UnboundedReceiver<T>;
+type WebSocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
+
+#[derive(Debug)]
+enum Void {}
+
+fn main() -> Result<()> {
+    task::block_on(run_task())
 }
 
-async fn accept_connection(id: u64, conns: Arc<Mutex<Vec<Connection>>>, stream: TcpStream) -> Result<(), tungstenite::error::Error> {
-    let ws_stream = async_tungstenite::accept_async(stream).await?;
-    println!("New conn {}", id);
+async fn run_task() -> Result<()> {
+    let server_addr = "0.0.0.0:9999";
+
+    let mut curr_conn_id: usize = 0;
+
+    let server = TcpListener::bind(&server_addr).await?;
+    println!("Listening on {}", server_addr);
+
+    let (event_broker_sender, event_broker_receiver) = mpsc::unbounded();
+
+    let event_broker_task_handle = task::spawn(event_broker_task(event_broker_receiver));
+
+    let mut incoming = server.incoming();
+
+    while let Some(stream) = incoming.next().await {
+        task::spawn(connection_task(stream?, event_broker_sender.clone(), curr_conn_id));
+        curr_conn_id += 1;
+    }
+
+    drop(event_broker_sender);
+    event_broker_task_handle.await?;
+
+    Ok(())
+}
+
+
+enum Event {
+    NewConnection {
+        id: usize,
+        ws_sender: WebSocketSender,
+        shutdown_receiver: ChannelReceiver<Void>
+    },
+    Message {
+        from_id: usize,
+        msg: Message,
+    },
+}
+
+async fn event_broker_task(incoming_events: ChannelReceiver<Event>) -> Result<()> {
+    let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
+    let mut conns: HashMap<usize, ChannelSender<Message>> = HashMap::new();
+    let mut incoming_events = incoming_events.fuse();
+
+    loop {
+        let event = select! {
+            event = incoming_events.next().fuse() => match event {
+                None => break,
+                Some(event) => event,
+            },
+            disconnect = disconnect_receiver.next().fuse() => {
+                let disconnected_conn = disconnect.unwrap();
+                conns.remove(&disconnected_conn);
+                continue;
+            },
+        };
+        match event {
+            Event::NewConnection { id, ws_sender, shutdown_receiver } => {
+                let existing_entry = conns.entry(id);
+                match existing_entry {
+                    Entry::Occupied(_) => (),
+                    Entry::Vacant(entry) => {
+                        let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
+                        entry.insert(conn_outgoing_sender);
+                        task::spawn(connection_sender_task(id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
+                    },
+                }
+            },
+            Event::Message { from_id, msg } => {
+                for other_key in conns.keys() {
+                    if *other_key != from_id {
+                        if let Some(mut other_ws_sender) = conns.get(other_key) {
+                            other_ws_sender.send(msg.clone()).await?;
+                        }
+                    }
+                }
+            },
+        }
+    }
+
+    drop(conns);
+    drop(disconnect_sender);
+    while let Some(_id) = disconnect_receiver.next().await {
+    }
+
+    Ok(())
+}
+
+async fn connection_task(
+    stream: TcpStream,
+    mut event_broker: ChannelSender<Event>,
+    conn_id: usize,
+) -> Result<()> {
+    let peer_addr = match stream.peer_addr() {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
+    let ws_stream = match accept_async(stream).await {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
+    println!("New conn ({}) from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
 
-    conns.lock().await.push(Connection{id, outgoing});
+    let (_connection_shutdown_sender, connection_shutdown_receiver) = mpsc::unbounded::<Void>();
+
+    match event_broker.send(Event::NewConnection{
+        id: conn_id,
+        ws_sender: outgoing,
+        shutdown_receiver: connection_shutdown_receiver,
+    }).await {
+        Ok(h) => h,
+        Err(e) => {
+            eprintln!("{}", e);
+            return Ok(())
+        }
+    };
 
     while let Some(msg) = incoming.next().await {
-        let m = msg?;
-        let mut i = 0;
-        // Def room for race conditions and OOB indexing here
-        let conns_len = conns.lock().await.len();
-        while i < conns_len {
-            let c = &mut conns.lock().await[i];
-            if c.id != id {
-                c.outgoing.send(m.clone()).await?;
+        match event_broker.send(Event::Message{
+            from_id: conn_id,
+            msg: msg?,
+        }).await {
+            Ok(h) => h,
+            Err(e) => {
+                eprintln!("{}", e);
+                return Ok(())
             }
-            i = i + 1;
         }
     }
 
     Ok(())
 }
 
-async fn run() -> Result<(), Error> {
-    let server_addr = "0.0.0.0:9999".to_string();
+async fn connection_sender_task(
+    id:  usize,
+    mut ws_sender: WebSocketSender,
+    mut disconnect_sender: ChannelSender<usize>,
+    message_receiver: ChannelReceiver<Message>,
+    shutdown_receiver: ChannelReceiver<Void>,
+) -> Result<()> {
+    let mut messages = message_receiver.fuse();
+    let mut shutdown = shutdown_receiver.fuse();
 
-    let server = TcpListener::bind(&server_addr).await.expect("failed to bind to addr");
-    println!("Listening on {}", server_addr);
-
-    let mut curr_id = 0;
-    let conns = Arc::new(Mutex::new(Vec::new()));
-
-    while let Ok((stream, _)) = server.accept().await {
-        curr_id = curr_id + 1;
-        task::spawn(accept_connection(curr_id, conns.clone(), stream));
+    loop {
+        select! {
+            msg = messages.next().fuse() => match msg {
+                Some(msg) => match ws_sender.send(msg).await {
+                    Ok(m) => m,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        return Ok(())
+                    }
+                },
+                None => break,
+            },
+            void = shutdown.next().fuse() => match void {
+                Some(void) => match void {},
+                None => break,
+            },
+        }
     }
 
+    disconnect_sender.send(id).await.unwrap();
     Ok(())
 }
 
-fn main() -> Result<(), Error> {
-    task::block_on(run())
-}
+
