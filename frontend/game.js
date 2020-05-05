@@ -173,22 +173,52 @@ function component(width, height, color, x, y, playerType) {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
-    this.explodeParticles = function() {
-        var particles = [];
+    this.totalExplodeParticles = (this.width * this.height);
+    this.exploding = false;
+    this.explodeParticles = [];
+    this.explodeMiddle = [];
+    this.getExplodeParticles = function() {
+        this.exploding = true;
+        console.log(this.playerType + " explode start!");
+        var copyBecauseIdk = [];
         for (var i = 0; i < width; i++) {
-            randomI = Math.floor(Math.random() * 100);
             for (var j = 0; j < height; j++) {
-                randomJ = Math.floor(Math.random() * 100);
-                ctx = gameMat.context;
-                ctx.fillStyle = color;
-                ctx.fillRect(x+randomI+i, y+randomJ+j, 1, 1);
+                this.explodeParticles.push([this.x+i, this.y+j, Math.floor(Math.random() * 50)]);
+                copyBecauseIdk.push([this.x+i, this.y+j]);
             }
+        }
+        this.explodeMiddle = copyBecauseIdk[Math.floor((this.width * this.height)/2)];
+    }
+    this.explodeAnimation = function() {
+        for (var i=0;i < this.explodeParticles.length; i++) {
+            if (this.explodeParticles[i][0] == this.explodeMiddle[0] || this.explodeParticles[i][1] == this.explodeMiddle[1]) {
+                continue;
+            } else if (this.explodeParticles[i][2] == 0) {
+                continue;
+            }
+
+            if (this.explodeParticles[i][0] < this.explodeMiddle[0]) {
+                this.explodeParticles[i][0] = this.explodeParticles[i][0] - Math.floor(Math.random() * 5);
+            } else if (this.explodeParticles[i][0] > this.explodeMiddle[0]) {
+                this.explodeParticles[i][0] = this.explodeParticles[i][0] + Math.floor(Math.random() * 5);
+            }
+
+            if (this.explodeParticles[i][1] < this.explodeMiddle[1]) {
+                this.explodeParticles[i][1] = this.explodeParticles[i][1] - Math.floor(Math.random() * 5);
+            } else if (this.explodeParticles[i][1] > this.explodeMiddle[1]) {
+                this.explodeParticles[i][1] = this.explodeParticles[i][1] + Math.floor(Math.random() * 5);
+            }
+            
+            this.explodeParticles[i][2]--;
+            
+            ctx = gameMat.context;
+            ctx.fillStyle = color;
+            ctx.fillRect(this.explodeParticles[i][0], this.explodeParticles[i][1], 1, 1);
+            
         }
     }
     this.explode = function() {
         this.active = false;
-        //this.explodeParticles();
-        console.log("explode");
     }
 }
 
@@ -200,11 +230,19 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
+    } else if (!character.exploding) {
+        character.getExplodeParticles();
     } else {
-        character.explodeParticles();
+        character.explodeAnimation();
     }
     bots.forEach(bot => {
-        bot.update();
+        if (bot.active) {
+            bot.update();
+        } else if (!bot.exploding) {
+            character.getExplodeParticles();
+        } else {
+            bot.explodeAnimation();
+        }
     });
     checkCollisions();
 }
@@ -220,7 +258,6 @@ function removePlayers(players) {
             for (var i = 0; i < bots.length; i++) {
                 if (bots[i].id == player.id) {
                     bots[i].explode();
-                    bots.splice(i, 1);
                     return true;
                 }
             }
