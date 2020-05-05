@@ -23,7 +23,6 @@ use futures::{
 use std::{
     collections::hash_map::{Entry, HashMap},
     error::Error,
-    future::Future,
 };
 
 
@@ -102,7 +101,7 @@ async fn event_broker_task(incoming_events: ChannelReceiver<Event>) -> Result<()
                     Entry::Vacant(entry) => {
                         let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
                         entry.insert(conn_outgoing_sender);
-                        spawn_and_log_error(connection_sender_task(id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
+                        task::spawn(connection_sender_task(id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
                     },
                 }
             },
@@ -192,7 +191,13 @@ async fn connection_sender_task(
     loop {
         select! {
             msg = messages.next().fuse() => match msg {
-                Some(msg) => ws_sender.send(msg).await?,
+                Some(msg) => match ws_sender.send(msg).await {
+                    Ok(m) => m,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        return Ok(())
+                    }
+                },
                 None => break,
             },
             void = shutdown.next().fuse() => match void {
@@ -206,10 +211,4 @@ async fn connection_sender_task(
     Ok(())
 }
 
-fn spawn_and_log_error<F>(fut: F) -> task::JoinHandle<()> where F: Future<Output = Result<()>> + Send + 'static {
-    task::spawn(async move {
-        if let Err(e) = fut.await {
-            eprintln!("{}", e)
-        }
-    })
-}
+
