@@ -179,46 +179,78 @@ function component(width, height, color, x, y, playerType) {
     this.explodeMiddle = [];
     this.getExplodeParticles = function() {
         this.exploding = true;
-        console.log(this.playerType + " explode start!");
-        var copyBecauseIdk = [];
+        var copyForMiddle = []; //I could not get a copy without reference, so this was the next best idea...
         for (var i = 0; i < width; i++) {
             for (var j = 0; j < height; j++) {
-                this.explodeParticles.push([this.x+i, this.y+j, Math.floor(Math.random() * 50)]);
-                copyBecauseIdk.push([this.x+i, this.y+j]);
+                /*
+                    0 = x
+                    1 = y
+                    2 = length of explosion (in frames)
+                    3 = Helps randomize explosion some. Change 4 to 3 to remove fading square
+                */
+                this.explodeParticles.push([this.x+i, this.y+j, Math.floor(Math.random() * 50), Math.floor(Math.random() * 4)]);
+                copyForMiddle.push([this.x+i, this.y+j]);
             }
         }
-        this.explodeMiddle = copyBecauseIdk[Math.floor((this.width * this.height)/2)];
+        this.explodeMiddle = copyForMiddle[Math.floor((this.width * this.height)/2)];
     }
     this.explodeAnimation = function() {
+        var hasParticles = false; //Helps turn off the animation when it is over.
         for (var i=0;i < this.explodeParticles.length; i++) {
             if (this.explodeParticles[i][0] == this.explodeMiddle[0] || this.explodeParticles[i][1] == this.explodeMiddle[1]) {
                 continue;
             } else if (this.explodeParticles[i][2] == 0) {
                 continue;
             }
+            hasParticles = true;
 
+            if (this.explodeParticles[i][3] == 0) {
+                this.explodeMove("x", i);
+                if (Math.floor(Math.random() * 2) === 0) { //Little bit of randomness to help it look better
+                    this.explodeMove("y", i);
+                }
+            } else if (this.explodeParticles[i][3] == 1) {
+                this.explodeMove("x", i);
+                this.explodeMove("y", i);
+                
+            } else if (this.explodeParticles[i][3] == 2) {
+                if (Math.floor(Math.random() * 2) === 0) { //Little bit of randomness to help it look better
+                    this.explodeMove("x", i);
+                }
+                this.explodeMove("y", i);
+            } else if (this.explodeParticles[i][3] == 3) {
+                if (Math.floor(Math.random() * 25) === 0) {
+                    this.explodeMove("x", i);
+                }
+                if (Math.floor(Math.random() * 25) === 0) {
+                    this.explodeMove("y", i);
+                }
+            }
+
+            this.explodeParticles[i][2]--;
+            
+            ctx = gameMat.context;
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.explodeParticles[i][0], this.explodeParticles[i][1], 1, 1);
+        }
+        if (!hasParticles) {
+            this.exploding = false;
+        }
+    }
+    this.explodeMove = function(direction, i) {
+        if (direction == "x") {
             if (this.explodeParticles[i][0] < this.explodeMiddle[0]) {
                 this.explodeParticles[i][0] = this.explodeParticles[i][0] - Math.floor(Math.random() * 5);
             } else if (this.explodeParticles[i][0] > this.explodeMiddle[0]) {
                 this.explodeParticles[i][0] = this.explodeParticles[i][0] + Math.floor(Math.random() * 5);
             }
-
+        } else if (direction == "y") {
             if (this.explodeParticles[i][1] < this.explodeMiddle[1]) {
                 this.explodeParticles[i][1] = this.explodeParticles[i][1] - Math.floor(Math.random() * 5);
             } else if (this.explodeParticles[i][1] > this.explodeMiddle[1]) {
                 this.explodeParticles[i][1] = this.explodeParticles[i][1] + Math.floor(Math.random() * 5);
             }
-            
-            this.explodeParticles[i][2]--;
-            
-            ctx = gameMat.context;
-            ctx.fillStyle = color;
-            ctx.fillRect(this.explodeParticles[i][0], this.explodeParticles[i][1], 1, 1);
-            
         }
-    }
-    this.explode = function() {
-        this.active = false;
     }
 }
 
@@ -230,17 +262,17 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
-    } else if (!character.exploding) {
+    } else if (!character.exploding && character.explodeParticles.length == 0) {
         character.getExplodeParticles();
-    } else {
+    } else if (character.exploding && character.explodeParticles.length != 0) {
         character.explodeAnimation();
     }
     bots.forEach(bot => {
         if (bot.active) {
             bot.update();
-        } else if (!bot.exploding) {
-            character.getExplodeParticles();
-        } else {
+        } else if (!bot.exploding && bot.explodeParticles.length == 0) {
+            bot.getExplodeParticles();
+        } else if (bot.exploding && bot.explodeParticles.length  != 0){
             bot.explodeAnimation();
         }
     });
@@ -257,12 +289,12 @@ function removePlayers(players) {
         if (player.playerType == "bot") {
             for (var i = 0; i < bots.length; i++) {
                 if (bots[i].id == player.id) {
-                    bots[i].explode();
+                    bots[i].active = false;
                     return true;
                 }
             }
         } else if (player.playerType == "player") {
-            character.explode();
+            character.active = false;
         }
     });
     
