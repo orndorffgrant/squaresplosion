@@ -143,7 +143,7 @@ function moveBots() {
                 break;
         }
         if (moved) {
-            sendLocation(bots[i].id, bots[i].x, bots[i].y);
+            sendLocation(bots[i].id, bots[i].x, bots[i].y); //Bots may move too fast for this.
             bots[i].lastMoveTime = (new Date()).getTime();
         }
     }
@@ -276,7 +276,6 @@ function updateGameArea() {
     bots.forEach(bot => {
         if (bot.active) {
             bot.update();
-            //sendLocation(bot.id, bot.x, bot.y); //Bots may move too fast for this.
         } else if (!bot.exploding && bot.explodeParticles.length == 0) {
             bot.getExplodeParticles();
         } else if (bot.exploding && bot.explodeParticles.length  != 0){
