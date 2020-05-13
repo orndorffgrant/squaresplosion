@@ -1,4 +1,5 @@
 var character;
+var otherPlayers = [];
 var bots = [];
 var gameMat;
 var darkmode = false;
@@ -29,7 +30,7 @@ function createGameMat() {
  *   return string (the color)
  */
 function getRandomColor() {
-    colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"]
+    colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"];
     return colors[Math.floor(Math.random() * 7)]
   }
 
@@ -158,8 +159,12 @@ function moveBots() {
  *   @param int y 
  *   @param string playerType 
  */
-function component(width, height, color, x, y, playerType) {
-    this.id = createCharacterId();
+function component(width, height, color, x, y, playerType, id = null) {
+    if (id === null) {
+        this.id = createCharacterId();
+    } else {
+        this.id = id;
+    }
     this.playerType = playerType;
     this.color = color;
     this.width = width;
@@ -262,6 +267,7 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
+        sendLocation(character.id, character.x, character.y);
     } else if (!character.exploding && character.explodeParticles.length == 0) {
         character.getExplodeParticles();
     } else if (character.exploding && character.explodeParticles.length != 0) {
@@ -270,10 +276,20 @@ function updateGameArea() {
     bots.forEach(bot => {
         if (bot.active) {
             bot.update();
+            //sendLocation(bot.id, bot.x, bot.y); //Bots may move too fast for this.
         } else if (!bot.exploding && bot.explodeParticles.length == 0) {
             bot.getExplodeParticles();
         } else if (bot.exploding && bot.explodeParticles.length  != 0){
             bot.explodeAnimation();
+        }
+    });
+    otherPlayers.forEach(player => {
+        if (player.active) {
+            player.update();
+        } else if (!player.exploding && player.explodeParticles.length == 0) {
+            player.getExplodeParticles();
+        } else if (player.exploding && player.explodeParticles.length  != 0){
+            player.explodeAnimation();
         }
     });
     checkCollisions();
@@ -295,6 +311,13 @@ function removePlayers(players) {
             }
         } else if (player.playerType == "player") {
             character.active = false;
+        } else if (player.playerType == "otherPlayer") {
+            for (var i = 0; i < otherPlayers.length; i++) {
+                if (otherPlayers[i].id == player.id) {
+                    otherPlayers[i].active = false;
+                    return true;
+                }
+            }
         }
     });
     
@@ -307,6 +330,7 @@ function removePlayers(players) {
 function checkCollisions() {
     var allPlayers = bots.slice(0);
     allPlayers.push(character);
+    allPlayers = allPlayers.concat(otherPlayers);
     //console.log(allPlayers);
     for (var j = 0; j < allPlayers.length; j++) {
         var player = allPlayers[j];
@@ -367,7 +391,6 @@ function addListener() {
                 break;
         }
         if (moved) { 
-            sendLocation(character.id, character.x, character.y);
             character.lastMoveTime = (new Date()).getTime();
         }
     })
@@ -386,5 +409,16 @@ function createCharacterId(){
         return (c=='x' ? r :(r&0x3|0x8)).toString(16);
     });
     return uuid;
+}
+
+/**
+ * createOtherPlayer
+ * @param string id : the player Id
+ * @param int x : x location
+ * @param int y : y location
+ */
+function createOtherPlayer(id, x, y) {
+    var player = new component(25, 25, getRandomColor(), x, y, "otherPlayer", id);
+    otherPlayers.push(player);
 }
 

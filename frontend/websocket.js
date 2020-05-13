@@ -8,9 +8,24 @@ attemptConnection();
  */
 function attemptConnection() {
     ws = new WebSocket("ws://localhost:9999");
-    ws.onmessage = (e) => console.log(e);
+    ws.onmessage = (e) => {
+        var player = JSON.parse(e.data);
+        var playerExists = false;
+        for (var i = 0; i < otherPlayers.length; i++) {
+            if (otherPlayers[i].id == player.id) {
+                otherPlayers[i].x = player.x;
+                otherPlayers[i].y = player.y;
+                playerExists = true;
+                break;
+            }
+        }
+        if (!playerExists) {
+            createOtherPlayer(player.id, player.x, player.y);
+        }
+    }
     ws.onopen = () => {
         connected = true;
+        ws.send(JSON.stringify({id: character.id, x: character.x, y: character.y}));
     }
 }
 
