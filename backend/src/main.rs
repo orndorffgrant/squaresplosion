@@ -67,12 +67,12 @@ async fn run_task() -> Result<()> {
 }
 
 
-enum Event<'a> {
+enum Event {
     NewConnection {
         conn_id: usize,
-        player_id: &'a str,
-        player_name: &'a str,
-        room_name: &'a str,
+        player_id: String,
+        player_name: String,
+        room_name: String,
         x: u32,
         y: u32,
         ws_sender: WebSocketSender,
@@ -80,7 +80,7 @@ enum Event<'a> {
     },
     PlayerMove {
         from_id: usize,
-        player_id: &'a str,
+        player_id: String,
         x: u32,
         y: u32,
     },
@@ -137,7 +137,7 @@ impl SquareRoomState {
     }
 }
 
-async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event<'a>>) -> Result<()> {
+async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Result<()> {
     let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
     let mut rooms: HashMap<String, SquareRoomState> = HashMap::new();
     let mut conns: HashMap<usize, &SquareRoomState> = HashMap::new();
@@ -221,7 +221,7 @@ struct JoinRoomMessage {
 
 async fn connection_task<'a>(
     stream: TcpStream,
-    mut event_broker: ChannelSender<Event<'a>>,
+    mut event_broker: ChannelSender<Event>,
     conn_id: usize,
 ) -> Result<()> {
     let peer_addr = match stream.peer_addr() {
@@ -238,33 +238,39 @@ async fn connection_task<'a>(
             return Ok(())
         }
     };
-    // TODO accept first message
     println!("New conn ({}) from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
 
     let (_connection_shutdown_sender, connection_shutdown_receiver) = mpsc::unbounded::<Void>();
 
-    let room_join_msg = match incoming.next().await {
-        Some(m) => m,
+    let room_join_msg: Message = match incoming.next().await
+     {
+        Some(m) => m?,
         None => {
             eprintln!("connection didn't send room join msg");
             return Ok(());
         },
     };
 
-    // match event_broker.send(Event::NewConnection{
-    //     conn_id,
-    //     player_id,
-    //     ws_sender: outgoing,
-    //     shutdown_receiver: connection_shutdown_receiver,
-    // }).await {
-    //     Ok(h) => h,
-    //     Err(e) => {
-    //         eprintln!("event broker down {}", e);
-    //         return Ok(())
-    //     }
-    // };
+    let room_join: JoinRoomMessage = serde_json::from_str(room_join_msg.to_string().as_str())?;
+
+    match event_broker.send(Event::NewConnection{
+        conn_id,
+        player_id: room_join.id,
+        player_name: room_join.player_name,
+        room_name: room_join.room_name,
+        x: room_join.x,
+        y: room_join.y,
+        ws_sender: outgoing,
+        shutdown_receiver: connection_shutdown_receiver,
+    }).await {
+        Ok(h) => h,
+        Err(e) => {
+            eprintln!("event broker down {}", e);
+            return Ok(())
+        }
+    };
 
     // while let Some(msg) = incoming.next().await {
     //     match event_broker.send(Event::Message{
