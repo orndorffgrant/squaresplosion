@@ -20,6 +20,9 @@ use futures::{
     FutureExt,
 };
 
+use serde::{Deserialize, Serialize};
+use serde_json::to_string;
+
 use std::{
     collections::hash_map::{Entry, HashMap},
     error::Error,
@@ -64,21 +67,81 @@ async fn run_task() -> Result<()> {
 }
 
 
-enum Event {
+enum Event<'a> {
     NewConnection {
-        id: usize,
+        conn_id: usize,
+        player_id: &'a str,
+        player_name: &'a str,
+        room_name: &'a str,
+        x: u32,
+        y: u32,
         ws_sender: WebSocketSender,
         shutdown_receiver: ChannelReceiver<Void>
     },
-    Message {
+    PlayerMove {
         from_id: usize,
-        msg: Message,
+        player_id: &'a str,
+        x: u32,
+        y: u32,
     },
 }
 
-async fn event_broker_task(incoming_events: ChannelReceiver<Event>) -> Result<()> {
+struct PlayerState {
+    id: String,
+    name: String,
+    score: u64,
+}
+struct CellState {
+    player_id: String,
+}
+struct SquareRoomState {
+    name: String,
+    player_senders: Vec<ChannelSender<Message>>,
+    player_state: HashMap<String, PlayerState>,
+    room_state: HashMap<u32, Box<HashMap<u32, CellState>>>,
+}
+impl SquareRoomState {
+    fn new(name: &str) -> SquareRoomState {
+        SquareRoomState{
+            name: name.to_string(),
+            player_senders: Vec::new(),
+            player_state: HashMap::new(),
+            room_state: HashMap::new(),
+        }
+    }
+    fn update_cell(&mut self, id: &str, x: u32, y: u32) -> &SquareRoomState {
+        let row = self.room_state.entry(x).or_insert_with(|| {
+            Box::new(HashMap::new())
+        });
+        let cell = row.entry(y).or_insert_with(|| {
+            CellState{
+                player_id: id.to_string(),
+            }
+        });
+        cell.player_id = id.to_string();
+        self
+    }
+    fn add_player(mut self, id: &str, name: &str, x: u32, y: u32, sender: ChannelSender<Message>) {
+        self.player_senders.push(sender);
+        self.player_state.insert(id.to_string(), PlayerState{
+            id: id.to_string(),
+            name: name.to_string(),
+            score: 1,
+        });
+        self.update_cell(id, x, y);
+    }
+    fn update_player(mut self, id: &str, x: u32, y: u32) {
+        self.update_cell(id, x, y);
+        let curr_player_state = self.player_state.get_mut(id).unwrap();
+        curr_player_state.score += 1;
+    }
+}
+
+async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event<'a>>) -> Result<()> {
     let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
-    let mut conns: HashMap<usize, ChannelSender<Message>> = HashMap::new();
+    let mut rooms: HashMap<String, SquareRoomState> = HashMap::new();
+    let mut conns: HashMap<usize, &SquareRoomState> = HashMap::new();
+
     let mut incoming_events = incoming_events.fuse();
 
     loop {
@@ -94,24 +157,46 @@ async fn event_broker_task(incoming_events: ChannelReceiver<Event>) -> Result<()
             },
         };
         match event {
-            Event::NewConnection { id, ws_sender, shutdown_receiver } => {
-                let existing_entry = conns.entry(id);
-                match existing_entry {
-                    Entry::Occupied(_) => (),
-                    Entry::Vacant(entry) => {
-                        let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
-                        entry.insert(conn_outgoing_sender);
-                        task::spawn(connection_sender_task(id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
-                    },
-                }
+            Event::NewConnection {
+                conn_id,
+                player_id,
+                player_name,
+                room_name,
+                x,
+                y,
+                ws_sender,
+                shutdown_receiver
+            } => {
+                // let room = rooms.entry(room_name.to_string()).or_insert_with(|| {
+                //     SquareRoomState::new(room_name)
+                // });
+                // // let room = match rooms.entry(room_name.to_string()) {
+                // //     Entry::Occupied(r) => r.into_mut(),
+                // //     Entry::Vacant(entry) => entry.insert(SquareRoomState::new(room_name)),
+                // // };
+                // let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
+                // // room.add_player(player_id, player_name, x, y, conn_outgoing_sender);
+
+                // let existing_conn = conns.entry(conn_id);
+                // match existing_conn {
+                //     Entry::Occupied(_) => (),
+                //     Entry::Vacant(entry) => {
+                //         entry.insert(room);
+                //         task::spawn(connection_sender_task(conn_id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
+                //     },
+                // }
             },
-            Event::Message { from_id, msg } => {
-                for other_key in conns.keys() {
-                    if *other_key != from_id {
-                        if let Some(mut other_ws_sender) = conns.get(other_key) {
-                            other_ws_sender.send(msg.clone()).await?;
-                        }
+            Event::PlayerMove { from_id, player_id, x, y } => {
+                let room = match conns.get_mut(&from_id) {
+                    Some(r_ref) => *r_ref,
+                    None => {
+                        eprintln!("cant find room for conn_id {}", from_id);
+                        continue;
                     }
+                };
+                for mut sender in &room.player_senders {
+                    // TODO create room state message and send it
+                    // sender.send(msg.clone()).await?;
                 }
             },
         }
@@ -125,9 +210,18 @@ async fn event_broker_task(incoming_events: ChannelReceiver<Event>) -> Result<()
     Ok(())
 }
 
-async fn connection_task(
+#[derive(Serialize, Deserialize)]
+struct JoinRoomMessage {
+    id: String,
+    player_name: String,
+    room_name: String,
+    x: u32,
+    y: u32,
+}
+
+async fn connection_task<'a>(
     stream: TcpStream,
-    mut event_broker: ChannelSender<Event>,
+    mut event_broker: ChannelSender<Event<'a>>,
     conn_id: usize,
 ) -> Result<()> {
     let peer_addr = match stream.peer_addr() {
@@ -144,36 +238,46 @@ async fn connection_task(
             return Ok(())
         }
     };
+    // TODO accept first message
     println!("New conn ({}) from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
 
     let (_connection_shutdown_sender, connection_shutdown_receiver) = mpsc::unbounded::<Void>();
 
-    match event_broker.send(Event::NewConnection{
-        id: conn_id,
-        ws_sender: outgoing,
-        shutdown_receiver: connection_shutdown_receiver,
-    }).await {
-        Ok(h) => h,
-        Err(e) => {
-            eprintln!("{}", e);
-            return Ok(())
-        }
+    let room_join_msg = match incoming.next().await {
+        Some(m) => m,
+        None => {
+            eprintln!("connection didn't send room join msg");
+            return Ok(());
+        },
     };
 
-    while let Some(msg) = incoming.next().await {
-        match event_broker.send(Event::Message{
-            from_id: conn_id,
-            msg: msg?,
-        }).await {
-            Ok(h) => h,
-            Err(e) => {
-                eprintln!("{}", e);
-                return Ok(())
-            }
-        }
-    }
+    // match event_broker.send(Event::NewConnection{
+    //     conn_id,
+    //     player_id,
+    //     ws_sender: outgoing,
+    //     shutdown_receiver: connection_shutdown_receiver,
+    // }).await {
+    //     Ok(h) => h,
+    //     Err(e) => {
+    //         eprintln!("event broker down {}", e);
+    //         return Ok(())
+    //     }
+    // };
+
+    // while let Some(msg) = incoming.next().await {
+    //     match event_broker.send(Event::Message{
+    //         from_id: conn_id,
+    //         msg: msg?,
+    //     }).await {
+    //         Ok(h) => h,
+    //         Err(e) => {
+    //             eprintln!("event broker down {}", e);
+    //             return Ok(())
+    //         }
+    //     }
+    // }
 
     Ok(())
 }
