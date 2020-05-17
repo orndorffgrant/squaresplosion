@@ -219,6 +219,12 @@ struct JoinRoomMessage {
     y: u32,
 }
 
+#[derive(Serialize, Deserialize)]
+struct PlayerMoveMessage {
+    x: u32,
+    y: u32,
+}
+
 async fn connection_task<'a>(
     stream: TcpStream,
     mut event_broker: ChannelSender<Event>,
@@ -255,9 +261,11 @@ async fn connection_task<'a>(
 
     let room_join: JoinRoomMessage = serde_json::from_str(room_join_msg.to_string().as_str())?;
 
+    let player_id = room_join.id;
+
     match event_broker.send(Event::NewConnection{
         conn_id,
-        player_id: room_join.id,
+        player_id: player_id.clone(),
         player_name: room_join.player_name,
         room_name: room_join.room_name,
         x: room_join.x,
@@ -272,18 +280,22 @@ async fn connection_task<'a>(
         }
     };
 
-    // while let Some(msg) = incoming.next().await {
-    //     match event_broker.send(Event::Message{
-    //         from_id: conn_id,
-    //         msg: msg?,
-    //     }).await {
-    //         Ok(h) => h,
-    //         Err(e) => {
-    //             eprintln!("event broker down {}", e);
-    //             return Ok(())
-    //         }
-    //     }
-    // }
+    while let Some(msg) = incoming.next().await {
+        let msg = msg?;
+        let move_msg: PlayerMoveMessage = serde_json::from_str(msg.to_string().as_str())?;
+        match event_broker.send(Event::PlayerMove{
+            from_id: conn_id,
+            player_id: player_id.clone(),
+            x: move_msg.x,
+            y: move_msg.y,
+        }).await {
+            Ok(h) => h,
+            Err(e) => {
+                eprintln!("event broker down {}", e);
+                return Ok(())
+            }
+        }
+    }
 
     Ok(())
 }
@@ -298,6 +310,7 @@ async fn connection_sender_task(
     let mut messages = message_receiver.fuse();
     let mut shutdown = shutdown_receiver.fuse();
 
+    // TODO serialize as json
     loop {
         select! {
             msg = messages.next().fuse() => match msg {
