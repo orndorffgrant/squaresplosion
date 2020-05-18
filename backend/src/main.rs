@@ -139,8 +139,8 @@ impl SquareRoomState {
 
 async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Result<()> {
     let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
-    let mut rooms: Box<HashMap<String, Box<SquareRoomState>>> = Box::new(HashMap::new());
-    let mut conns: Box<HashMap<usize, String>> = Box::new(HashMap::new());
+    let mut rooms: HashMap<String, SquareRoomState> = HashMap::new();
+    let mut conns: HashMap<usize, String> = HashMap::new();
 
     let mut incoming_events = incoming_events.fuse();
 
@@ -170,7 +170,7 @@ async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Resul
                 shutdown_receiver
             } => {
                 let room = rooms.entry(room_name.to_string()).or_insert_with(|| {
-                    Box::new(SquareRoomState::new(room_name.as_str()))
+                    SquareRoomState::new(room_name.as_str())
                 });
 
                 let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
