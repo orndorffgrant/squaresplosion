@@ -45,6 +45,7 @@ function startGame() {
     var randomColor = getRandomColor();
     document.getElementById("grid").style.borderColor = randomColor;
     character = new component(25, 25, randomColor, randomX, randomY, "player");
+    attemptConnection();
     addListener();
     gameMat.start();
 }
@@ -267,7 +268,7 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
-        sendLocation(character.id, character.x, character.y);
+        // sendLocation(character.id, character.x, character.y);
     } else if (!character.exploding && character.explodeParticles.length == 0) {
         character.getExplodeParticles();
     } else if (character.exploding && character.explodeParticles.length != 0) {
