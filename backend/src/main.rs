@@ -121,7 +121,7 @@ impl SquareRoomState {
         cell.player_id = id.to_string();
         self
     }
-    fn add_player(mut self, id: &str, name: &str, x: u32, y: u32, sender: ChannelSender<Message>) {
+    fn add_player(&mut self, id: &str, name: &str, x: u32, y: u32, sender: ChannelSender<Message>) {
         self.player_senders.push(sender);
         self.player_state.insert(id.to_string(), PlayerState{
             id: id.to_string(),
@@ -130,7 +130,7 @@ impl SquareRoomState {
         });
         self.update_cell(id, x, y);
     }
-    fn update_player(mut self, id: &str, x: u32, y: u32) {
+    fn update_player(&mut self, id: &str, x: u32, y: u32) {
         self.update_cell(id, x, y);
         let curr_player_state = self.player_state.get_mut(id).unwrap();
         curr_player_state.score += 1;
@@ -139,8 +139,8 @@ impl SquareRoomState {
 
 async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Result<()> {
     let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
-    let mut rooms: HashMap<String, SquareRoomState> = HashMap::new();
-    let mut conns: HashMap<usize, &SquareRoomState> = HashMap::new();
+    let mut rooms: Box<HashMap<String, Box<SquareRoomState>>> = Box::new(HashMap::new());
+    let mut conns: Box<HashMap<usize, String>> = Box::new(HashMap::new());
 
     let mut incoming_events = incoming_events.fuse();
 
@@ -152,12 +152,14 @@ async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Resul
             },
             disconnect = disconnect_receiver.next().fuse() => {
                 let disconnected_conn = disconnect.unwrap();
+                // TODO check if room is empty
                 conns.remove(&disconnected_conn);
                 continue;
             },
         };
+
         match event {
-            Event::NewConnection {
+            Event::NewConnection{
                 conn_id,
                 player_id,
                 player_name,
@@ -167,36 +169,36 @@ async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Resul
                 ws_sender,
                 shutdown_receiver
             } => {
-                // let room = rooms.entry(room_name.to_string()).or_insert_with(|| {
-                //     SquareRoomState::new(room_name)
-                // });
-                // // let room = match rooms.entry(room_name.to_string()) {
-                // //     Entry::Occupied(r) => r.into_mut(),
-                // //     Entry::Vacant(entry) => entry.insert(SquareRoomState::new(room_name)),
-                // // };
-                // let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
-                // // room.add_player(player_id, player_name, x, y, conn_outgoing_sender);
+                let room = rooms.entry(room_name.to_string()).or_insert_with(|| {
+                    Box::new(SquareRoomState::new(room_name.as_str()))
+                });
 
-                // let existing_conn = conns.entry(conn_id);
-                // match existing_conn {
-                //     Entry::Occupied(_) => (),
-                //     Entry::Vacant(entry) => {
-                //         entry.insert(room);
-                //         task::spawn(connection_sender_task(conn_id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
-                //     },
-                // }
+                let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
+                room.add_player(player_id.as_str(), player_name.as_str(), x, y, conn_outgoing_sender);
+
+                conns.insert(conn_id, room_name);
+                task::spawn(connection_sender_task(conn_id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
             },
             Event::PlayerMove { from_id, player_id, x, y } => {
-                let room = match conns.get_mut(&from_id) {
-                    Some(r_ref) => *r_ref,
+                let room_name = match conns.get(&from_id) {
+                    Some(r_ref) => r_ref,
                     None => {
                         eprintln!("cant find room for conn_id {}", from_id);
                         continue;
                     }
                 };
+                let room = match rooms.get_mut(room_name) {
+                    Some(r_ref) => r_ref,
+                    None => {
+                        eprintln!("cant find room for conn_id {}", from_id);
+                        continue;
+                    }
+                };
+                room.update_player(&player_id, x, y);
+
+                // TODO create room state message and send it
                 for mut sender in &room.player_senders {
-                    // TODO create room state message and send it
-                    // sender.send(msg.clone()).await?;
+                    sender.send(Message::Text("hello".to_string())).await?;
                 }
             },
         }
