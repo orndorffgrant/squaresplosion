@@ -21,15 +21,16 @@ use futures::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
+use serde::ser::{Serializer, SerializeSeq, SerializeMap};
 
 use std::{
-    collections::hash_map::{Entry, HashMap},
+    collections::hash_map::{HashMap},
     error::Error,
+    sync::Arc,
 };
 
 
-type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+type ServerResult<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 type ChannelSender<T> = mpsc::UnboundedSender<T>;
 type ChannelReceiver<T> = mpsc::UnboundedReceiver<T>;
 type WebSocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
@@ -37,11 +38,11 @@ type WebSocketSender = SplitSink<WebSocketStream<TcpStream>, Message>;
 #[derive(Debug)]
 enum Void {}
 
-fn main() -> Result<()> {
+fn main() -> ServerResult<()> {
     task::block_on(run_task())
 }
 
-async fn run_task() -> Result<()> {
+async fn run_task() -> ServerResult<()> {
     let server_addr = "0.0.0.0:9999";
 
     let mut curr_conn_id: usize = 0;
@@ -86,32 +87,34 @@ enum Event {
     },
 }
 
+#[derive(Serialize, Deserialize)]
 struct PlayerState {
     id: String,
     name: String,
     score: u64,
 }
+#[derive(Serialize, Deserialize)]
 struct CellState {
     player_id: String,
 }
 struct SquareRoomState {
     name: String,
-    player_senders: Vec<ChannelSender<Message>>,
-    player_state: HashMap<String, PlayerState>,
-    room_state: HashMap<u32, Box<HashMap<u32, CellState>>>,
+    player_senders: Vec<ChannelSender<RoomStateMessageEvent>>,
+    player_state: Arc<HashMap<String, PlayerState>>,
+    room_state: Arc<HashMap<u32, HashMap<u32, CellState>>>,
 }
 impl SquareRoomState {
     fn new(name: &str) -> SquareRoomState {
         SquareRoomState{
             name: name.to_string(),
             player_senders: Vec::new(),
-            player_state: HashMap::new(),
-            room_state: HashMap::new(),
+            player_state: Arc::new(HashMap::new()),
+            room_state: Arc::new(HashMap::new()),
         }
     }
     fn update_cell(&mut self, id: &str, x: u32, y: u32) -> &SquareRoomState {
         let row = self.room_state.entry(x).or_insert_with(|| {
-            Box::new(HashMap::new())
+            HashMap::new()
         });
         let cell = row.entry(y).or_insert_with(|| {
             CellState{
@@ -121,7 +124,7 @@ impl SquareRoomState {
         cell.player_id = id.to_string();
         self
     }
-    fn add_player(&mut self, id: &str, name: &str, x: u32, y: u32, sender: ChannelSender<Message>) {
+    fn add_player(&mut self, id: &str, name: &str, x: u32, y: u32, sender: ChannelSender<RoomStateMessageEvent>) {
         self.player_senders.push(sender);
         self.player_state.insert(id.to_string(), PlayerState{
             id: id.to_string(),
@@ -137,7 +140,7 @@ impl SquareRoomState {
     }
 }
 
-async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Result<()> {
+async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> ServerResult<()> {
     let (disconnect_sender, mut disconnect_receiver) = mpsc::unbounded::<usize>();
     let mut rooms: HashMap<String, SquareRoomState> = HashMap::new();
     let mut conns: HashMap<usize, String> = HashMap::new();
@@ -198,7 +201,10 @@ async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Resul
 
                 // TODO create room state message and send it
                 for mut sender in &room.player_senders {
-                    sender.send(Message::Text("hello".to_string())).await?;
+                    sender.send(RoomStateMessageEvent{
+                        player_state: room.player_state.clone(),
+                        room_state: room.room_state.clone(),
+                    }).await?;
                 }
             },
         }
@@ -227,11 +233,29 @@ struct PlayerMoveMessage {
     y: u32,
 }
 
+struct RoomStateMessageEvent {
+    player_state: Arc<HashMap<String, PlayerState>>,
+    room_state: Arc<HashMap<u32, HashMap<u32, CellState>>>,
+}
+
+impl Serialize for RoomStateMessageEvent
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("player_state", &*self.player_state)?;
+        map.serialize_entry("room_state", &*self.room_state)?;
+        map.end()
+    }
+}
+
 async fn connection_task<'a>(
     stream: TcpStream,
     mut event_broker: ChannelSender<Event>,
     conn_id: usize,
-) -> Result<()> {
+) -> ServerResult<()> {
     let peer_addr = match stream.peer_addr() {
         Ok(p) => p,
         Err(e) => {
@@ -306,30 +330,46 @@ async fn connection_sender_task(
     id:  usize,
     mut ws_sender: WebSocketSender,
     mut disconnect_sender: ChannelSender<usize>,
-    message_receiver: ChannelReceiver<Message>,
+    message_receiver: ChannelReceiver<RoomStateMessageEvent>,
     shutdown_receiver: ChannelReceiver<Void>,
-) -> Result<()> {
+) -> ServerResult<()> {
     let mut messages = message_receiver.fuse();
     let mut shutdown = shutdown_receiver.fuse();
-
-    // TODO serialize as json
-    loop {
-        select! {
-            msg = messages.next().fuse() => match msg {
-                Some(msg) => match ws_sender.send(msg).await {
-                    Ok(m) => m,
-                    Err(e) => {
-                        eprintln!("{}", e);
-                        return Ok(())
-                    }
-                },
-                None => break,
-            },
-            void = shutdown.next().fuse() => match void {
-                Some(void) => match void {},
-                None => break,
-            },
+    if let Some(msg) = messages.next().await {
+        let json_msg = serde_json::to_string(&msg)?;
+        match ws_sender.send(Message::Text(json_msg)).await {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("{}", e);
+                return Ok(())
+            }
         }
+    }
+
+    loop {
+        // select! {
+        //     msg = messages.next().fuse() => match msg {
+        //         Some(msg) => {
+        //             let room_state_msg = RoomStateMessage{
+        //                 player_state: msg.player_state,
+        //                 room_state: msg.room_state,
+        //             };
+        //             let json_msg = serde_json::to_string(&room_state_msg)?;
+        //             match ws_sender.send(Message::Text(json_msg)).await {
+        //                 Ok(m) => m,
+        //                 Err(e) => {
+        //                     eprintln!("{}", e);
+        //                     return Ok(())
+        //                 }
+        //             }
+        //         },
+        //         None => break,
+        //     },
+        //     void = shutdown.next().fuse() => match void {
+        //         Some(void) => match void {},
+        //         None => break,
+        //     },
+        // }
     }
 
     disconnect_sender.send(id).await.unwrap();
