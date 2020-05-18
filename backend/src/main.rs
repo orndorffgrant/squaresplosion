@@ -21,12 +21,10 @@ use futures::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde::ser::{Serializer, SerializeSeq, SerializeMap};
 
 use std::{
     collections::hash_map::{HashMap},
     error::Error,
-    sync::Arc,
 };
 
 
@@ -87,29 +85,29 @@ enum Event {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct PlayerState {
     id: String,
     name: String,
     score: u64,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct CellState {
     player_id: String,
 }
 struct SquareRoomState {
     name: String,
     player_senders: Vec<ChannelSender<RoomStateMessageEvent>>,
-    player_state: Arc<HashMap<String, PlayerState>>,
-    room_state: Arc<HashMap<u32, HashMap<u32, CellState>>>,
+    player_state: HashMap<String, PlayerState>,
+    room_state: HashMap<u32, HashMap<u32, CellState>>,
 }
 impl SquareRoomState {
     fn new(name: &str) -> SquareRoomState {
         SquareRoomState{
             name: name.to_string(),
             player_senders: Vec::new(),
-            player_state: Arc::new(HashMap::new()),
-            room_state: Arc::new(HashMap::new()),
+            player_state: HashMap::new(),
+            room_state: HashMap::new(),
         }
     }
     fn update_cell(&mut self, id: &str, x: u32, y: u32) -> &SquareRoomState {
@@ -199,7 +197,6 @@ async fn event_broker_task<'a>(incoming_events: ChannelReceiver<Event>) -> Serve
                 };
                 room.update_player(&player_id, x, y);
 
-                // TODO create room state message and send it
                 for mut sender in &room.player_senders {
                     sender.send(RoomStateMessageEvent{
                         player_state: room.player_state.clone(),
@@ -233,22 +230,10 @@ struct PlayerMoveMessage {
     y: u32,
 }
 
+#[derive(Serialize, Deserialize)]
 struct RoomStateMessageEvent {
-    player_state: Arc<HashMap<String, PlayerState>>,
-    room_state: Arc<HashMap<u32, HashMap<u32, CellState>>>,
-}
-
-impl Serialize for RoomStateMessageEvent
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(2))?;
-        map.serialize_entry("player_state", &*self.player_state)?;
-        map.serialize_entry("room_state", &*self.room_state)?;
-        map.end()
-    }
+    player_state: HashMap<String, PlayerState>,
+    room_state: HashMap<u32, HashMap<u32, CellState>>,
 }
 
 async fn connection_task<'a>(
@@ -335,41 +320,27 @@ async fn connection_sender_task(
 ) -> ServerResult<()> {
     let mut messages = message_receiver.fuse();
     let mut shutdown = shutdown_receiver.fuse();
-    if let Some(msg) = messages.next().await {
-        let json_msg = serde_json::to_string(&msg)?;
-        match ws_sender.send(Message::Text(json_msg)).await {
-            Ok(m) => m,
-            Err(e) => {
-                eprintln!("{}", e);
-                return Ok(())
-            }
-        }
-    }
 
     loop {
-        // select! {
-        //     msg = messages.next().fuse() => match msg {
-        //         Some(msg) => {
-        //             let room_state_msg = RoomStateMessage{
-        //                 player_state: msg.player_state,
-        //                 room_state: msg.room_state,
-        //             };
-        //             let json_msg = serde_json::to_string(&room_state_msg)?;
-        //             match ws_sender.send(Message::Text(json_msg)).await {
-        //                 Ok(m) => m,
-        //                 Err(e) => {
-        //                     eprintln!("{}", e);
-        //                     return Ok(())
-        //                 }
-        //             }
-        //         },
-        //         None => break,
-        //     },
-        //     void = shutdown.next().fuse() => match void {
-        //         Some(void) => match void {},
-        //         None => break,
-        //     },
-        // }
+        select! {
+            msg = messages.next().fuse() => match msg {
+                Some(msg) => {
+                    let json_msg = serde_json::to_string(&msg)?;
+                    match ws_sender.send(Message::Text(json_msg)).await {
+                        Ok(m) => m,
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            return Ok(())
+                        }
+                    }
+                },
+                None => break,
+            },
+            void = shutdown.next().fuse() => match void {
+                Some(void) => match void {},
+                None => break,
+            },
+        }
     }
 
     disconnect_sender.send(id).await.unwrap();
