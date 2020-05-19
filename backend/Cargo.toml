@@ -1,5 +1,5 @@
 [package]
-name = "backend"
+name = "squaresplosion"
 version = "0.1.0"
 authors = ["Grant Orndorff <orndorffgrant@gmail.com>"]
 edition = "2018"

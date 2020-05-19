@@ -55,17 +55,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
-name = "backend"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "async-tungstenite",
- "futures",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "base64"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -707,6 +696,17 @@ name = "smallvec"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c2fb2ec9bcd216a5b0d0ccf31ab17b5ed1d627960edff65bbe95d3ce221cefc"
+
+[[package]]
+name = "squaresplosion"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "async-tungstenite",
+ "futures",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "syn"
