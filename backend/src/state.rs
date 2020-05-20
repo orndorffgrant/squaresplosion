@@ -12,11 +12,14 @@ pub struct PlayerState {
     pub id: String,
     pub name: String,
     pub score: u64,
+    pub x: u32,
+    pub y: u32,
+    pub alive: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CellState {
-    pub player_id: String,
+    pub player_id: Option<String>,
 }
 
 pub struct PlayerSender {
@@ -43,15 +46,49 @@ impl SquareRoomState {
         }
     }
     fn update_cell(&mut self, id: &str, x: u32, y: u32) -> &SquareRoomState {
-        let row = self.room_state.entry(x).or_insert_with(|| {
-            HashMap::new()
-        });
-        let cell = row.entry(y).or_insert_with(|| {
-            CellState{
-                player_id: id.to_string(),
+        // TODO unwraps all over
+        let player_state = self.player_state.get_mut(id).unwrap();
+        let mut to_kill = None;
+        if player_state.alive {
+
+            // remove them from old location
+            let old_row_opt = self.room_state.get_mut(&player_state.x);
+            if let Some(old_row) = old_row_opt {
+                let old_cell_opt = old_row.get_mut(&player_state.y);
+                if let Some(old_cell) = old_cell_opt {
+                    if old_cell.player_id == Some(id.to_string()) {
+                        old_cell.player_id = None;
+                    }
+                }
             }
-        });
-        cell.player_id = id.to_string();
+
+            // add them to new location
+            let row = self.room_state.entry(x).or_insert_with(|| {
+                HashMap::new()
+            });
+            let cell = row.entry(y).or_insert_with(|| {
+                CellState{
+                    player_id: None,
+                }
+            });
+            let id_string = id.to_string();
+            // if cell has another player, kill them
+            if let Some(ref other_player_id) = cell.player_id {
+                if *other_player_id != id_string {
+                    to_kill = Some(other_player_id.clone());
+                }
+            }
+            cell.player_id = Some(id.to_string());
+
+            player_state.x = x;
+            player_state.y = y;
+        }
+        if let Some(to_kill_id) = to_kill {
+            let to_kill_player_state_opt = self.player_state.get_mut(&to_kill_id);
+            if let Some(to_kill_player_state) = to_kill_player_state_opt {
+                to_kill_player_state.alive = false;
+            }
+        }
         self
     }
     pub fn add_player(&mut self, conn_id: usize, id: &str, name: &str, x: u32, y: u32, sender: types::ChannelSender<ws_messages::RoomStateMessageEvent>) {
@@ -64,6 +101,9 @@ impl SquareRoomState {
             id: id.to_string(),
             name: name.to_string(),
             score: 1,
+            x,
+            y,
+            alive: true,
         });
         self.update_cell(id, x, y);
     }
