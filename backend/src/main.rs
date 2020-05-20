@@ -1,3 +1,5 @@
+#![recursion_limit="256"]
+
 mod internal_messages;
 mod ws_messages;
 mod state;
@@ -16,7 +18,12 @@ use futures::{
     },
 };
 
+use log::{trace, info};
+use pretty_env_logger;
+
 fn main() -> types::ServerResult<()> {
+    pretty_env_logger::init();
+    trace!("starting up");
     task::block_on(run())
 }
 
@@ -26,7 +33,7 @@ async fn run() -> types::ServerResult<()> {
     let mut curr_conn_id: usize = 0;
 
     let server = TcpListener::bind(&server_addr).await?;
-    println!("Listening on {}", server_addr);
+    info!("Listening on {}", server_addr);
 
     let (event_broker_sender, event_broker_receiver) = mpsc::unbounded();
 

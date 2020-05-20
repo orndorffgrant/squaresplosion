@@ -268,7 +268,6 @@ function updateGameArea() {
     gameMat.clear();
     if (character.active) {
         character.update();
-        // sendLocation(character.id, character.x, character.y);
     } else if (!character.exploding && character.explodeParticles.length == 0) {
         character.getExplodeParticles();
     } else if (character.exploding && character.explodeParticles.length != 0) {
@@ -363,24 +362,28 @@ function addListener() {
     document.addEventListener("keydown", function(e) {
         var moved = false;
         switch(e.key) {
+            case "ArrowUp":
             case "w":
                 if (character.y - 25 >= 0) {
                     character.y -= 25;
                     moved = true;
                 }
                 break;
+            case "ArrowDown":
             case "s":
                 if (character.y + 25 <= gameMat.canvas.height - 25) {
                     character.y += 25;
                     moved = true;
                 }
                 break;
+            case "ArrowLeft":
             case "a":
                 if (character.x - 25 >= 0) {
                     character.x -= 25;
                     moved = true;
                 }
                 break;
+            case "ArrowRight":
             case "d":
                 if (character.x + 25 <= gameMat.canvas.width - 25) {
                     character.x += 25;
@@ -392,6 +395,7 @@ function addListener() {
         }
         if (moved) { 
             character.lastMoveTime = (new Date()).getTime();
+            sendLocation(character.id, character.x, character.y);
         }
     })
 }
