@@ -1,6 +1,5 @@
 var connected = false;
 var ws;
-attemptConnection();
 
 /**
  * attemptConnection
@@ -10,6 +9,7 @@ function attemptConnection() {
     ws = new WebSocket("ws://localhost:9999");
     ws.onmessage = (e) => {
         var player = JSON.parse(e.data);
+        console.log(player);
         var playerExists = false;
         for (var i = 0; i < otherPlayers.length; i++) {
             if (otherPlayers[i].id == player.id) {
@@ -20,12 +20,12 @@ function attemptConnection() {
             }
         }
         if (!playerExists) {
-            createOtherPlayer(player.id, player.x, player.y);
+            // createOtherPlayer(player.id, player.x, player.y);
         }
     }
     ws.onopen = () => {
         connected = true;
-        ws.send(JSON.stringify({id: character.id, x: character.x, y: character.y}));
+        ws.send(JSON.stringify({id: character.id, player_name: "scott", room_name: "default", x: character.x, y: character.y}));
     }
 }
 
@@ -42,5 +42,5 @@ function sendLocation(charId, xPos, yPos){
         console.error("Not connected");
         return;
     }
-    ws.send(JSON.stringify({id: charId, x: xPos, y: yPos}));
+    ws.send(JSON.stringify({x: xPos, y: yPos}));
 }
