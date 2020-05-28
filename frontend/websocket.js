@@ -24,8 +24,11 @@ function attemptConnection() {
         }
     }
     ws.onopen = () => {
+        var url = new URL(window.location.href);
+        var room = url.searchParams.get("room");
+        var player = url.searchParams.get("player");
         connected = true;
-        ws.send(JSON.stringify({id: character.id, player_name: "scott", room_name: "default", x: character.x, y: character.y}));
+        ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y}));
     }
 }
 

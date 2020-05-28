@@ -101,3 +101,7 @@ body.darkmode button {
 body.darkmode .icon {
   filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg) brightness(103%) contrast(103%);
 }
+
+#joinRoomForm {
+  display: none;
+}
