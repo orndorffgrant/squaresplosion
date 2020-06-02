@@ -54,3 +54,10 @@ window.matchMedia('(prefers-color-scheme: no-preference)').addListener(e => {
     }
 });
 //End of dark mode toggling.
+
+function copyToClipboard(id) {
+    var range = document.createRange();
+    range.selectNode(document.getElementById(id));
+    window.getSelection().addRange(range);
+    document.execCommand("copy");
+}

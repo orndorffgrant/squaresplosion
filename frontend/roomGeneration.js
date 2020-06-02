@@ -5,13 +5,14 @@ function createRoom() {
         alert("You must choose a player name");
         return;
     }
-    goToRoom(roomId, playerName);
+    goToRoom(roomId, playerName, true);
 }
 
 function joinRoom() {
     var joinStatus = window.getComputedStyle(document.getElementById("joinRoomForm")).display;
     if (joinStatus === "none") {
         document.getElementById("joinRoomForm").style.display = "inline-block";
+        document.getElementById("createRoomForm").style.display = "none";
         return;
     }
 
@@ -25,7 +26,7 @@ function joinRoom() {
         alert ("Room code must be 5 characters and alphanumeric (no special characters)")
         return;
     }
-    goToRoom(document.getElementById("roomCode").value.toUpperCase(), playerName);
+    goToRoom(document.getElementById("roomCode").value.toUpperCase(), playerName, false);
 }
 
 function validateRoomCode() {
@@ -43,8 +44,10 @@ function validateRoomCode() {
     
 }
 
-function goToRoom(roomId, playerName) {
-    window.location = "canvas.html?room=" + roomId + "&player=" + playerName;
+function goToRoom(roomId, playerName, newRoom) {
+    sessionStorage.setItem("playerName", playerName);
+    sessionStorage.setItem("newRoom", newRoom);
+    window.location = "canvas.html?room=" + roomId;
 }
 
 function makeid() {
