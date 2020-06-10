@@ -27,6 +27,7 @@ function attemptConnection() {
         }
         connected = true;
         ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y, newRoom: roomOwner}));
+        sessionStorage.removeItem("newRoom");
     }
 }
 

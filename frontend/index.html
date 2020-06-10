@@ -17,8 +17,12 @@
             <button onclick="createRoom()">Create Room</button>
             <button onclick="joinRoom()">Join Room</button>
         </div>
+        <div id="createRoomForm">
+            <label>Room Name:</label><input id="newRoomCode"/>
+            <button onclick="createRoom()">Create</button>
+        </div>
         <div id="joinRoomForm">
-            <label>Room Code:</label><input id="roomCode" maxlength="5"/>
+            <label>Room Name:</label><input id="roomCode"/>
             <button onclick="joinRoom()">Join</button>
         </div>
     </div>

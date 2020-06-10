@@ -11,18 +11,18 @@ function toggleDarkMode() {
         
         darkmode = true; //used in game.js
 
-        bots.forEach(bot => {
-            bot.color = "#FFFFFF";
-        });
+        //bots.forEach(bot => {
+        //    bot.color = "#FFFFFF";
+        //});
         document.getElementById("darkmodeSlider").classList.add("on");
     } else {
         //Disables dark mode
         body.classList.remove("darkmode");
         
         darkmode = false; //used in game.js
-        bots.forEach(bot => {
-            bot.color = "#000000";
-        });
+        //bots.forEach(bot => {
+        //    bot.color = "#000000";
+        //});
         document.getElementById("darkmodeSlider").classList.remove("on");
     }
 }

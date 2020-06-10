@@ -1,11 +1,23 @@
 function createRoom() {
-    var roomId = makeid();
+    var createStatus = window.getComputedStyle(document.getElementById("createRoomForm")).display;
+    if (createStatus === "none") {
+        document.getElementById("joinRoomForm").style.display = "none";
+        document.getElementById("createRoomForm").style.display = "inline-block";
+        return;
+    }
+
+    var roomCode = document.getElementById("newRoomCode").value.toUpperCase();
     var playerName = document.getElementById("playerName").value;
     if (playerName.length == 0) {
         alert("You must choose a player name");
         return;
     }
-    goToRoom(roomId, playerName, true);
+    var validCode = validateRoomCode(roomCode);
+    if (!validCode) {
+        alert("Room name cannot have special characters");
+        return;
+    }
+    goToRoom(roomCode, playerName, true);
 }
 
 function joinRoom() {
@@ -21,22 +33,19 @@ function joinRoom() {
         alert("You must choose a player name");
         return;
     }
-    var validCode = validateRoomCode();
+    var roomCode = document.getElementById("roomCode").value.toUpperCase();
+    var validCode = validateRoomCode(roomCode);
     if (!validCode) {
-        alert ("Room code must be 5 characters and alphanumeric (no special characters)")
+        alert ("Room name cannot have special characters")
         return;
     }
     goToRoom(document.getElementById("roomCode").value.toUpperCase(), playerName, false);
 }
 
-function validateRoomCode() {
-    var roomCode = document.getElementById("roomCode").value.toUpperCase();
-    var playerName = document.getElementById("playerName").value;
+function validateRoomCode(roomCode) {
     var re = new RegExp("^[A-Z0-9]+$");
     valid = true;
-    if (roomCode.length != 5) {
-        valid = false;
-    } else if (!re.test(roomCode)) {
+    if (!re.test(roomCode)) {
         valid = false;
     }
 
@@ -47,7 +56,7 @@ function validateRoomCode() {
 function goToRoom(roomId, playerName, newRoom) {
     sessionStorage.setItem("playerName", playerName);
     sessionStorage.setItem("newRoom", newRoom);
-    window.location = "canvas.html?room=" + roomId;
+    window.location.href = "canvas.html?room=" + roomId;
 }
 
 function makeid() {
