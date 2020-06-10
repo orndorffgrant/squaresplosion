@@ -56,7 +56,7 @@ function validateRoomCode(roomCode) {
 function goToRoom(roomId, playerName, newRoom) {
     sessionStorage.setItem("playerName", playerName);
     sessionStorage.setItem("newRoom", newRoom);
-    window.location.href = "canvas.html?room=" + roomId;
+    window.location.href = "canvas?room=" + roomId;
 }
 
 function makeid() {
