@@ -360,6 +360,9 @@ function checkCollisions() {
  */
 function addListener() {
     document.addEventListener("keydown", function(e) {
+        if (!character.active) {
+            return;
+        }
         var moved = false;
         switch(e.key) {
             case "ArrowUp":
@@ -426,3 +429,31 @@ function createOtherPlayer(id, x, y) {
     otherPlayers.push(player);
 }
 
+function updatePlayerLocations(playerStates) {
+    var playerKeys = Object.keys(playerStates);
+
+    for (var i = 0; i < playerKeys.length; i++) {
+        var player = playerStates[playerKeys[i]];
+        var updatedPlayer = false;
+        if (playerKeys[i] == character.id) {
+            character.x = player.x;
+            character.y = player.y;
+            character.active = player.alive;
+            updatedPlayer = true;
+            continue;
+        }
+        for (var j = 0; j < otherPlayers.length; j++) {
+            if (playerKeys[i] == otherPlayers[j].id) {
+                otherPlayers[j].x = player.x;
+                otherPlayers[j].y = player.y;
+                otherPlayers[j].active = player.alive;
+                updatedPlayer = true;
+                break;
+            }
+        }
+        if (!updatedPlayer) {
+            createOtherPlayer(player.id, player.x, player.y);
+        }
+
+    }
+}

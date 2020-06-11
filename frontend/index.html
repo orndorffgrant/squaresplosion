@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        @font-face {
+            font-family: "blockFont";
+            src: url(FFFFORWA.TTF);
+        }
+    </style>
+    <title>Squaresplotion</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <meta charset="utf-8"/>
+</head>
+<body>
+    <div class="divWrap">
+        <div>
+            <label>Player Name:</label><input id="playerName"/>
+            <button onclick="createRoom()">Create Room</button>
+            <button onclick="joinRoom()">Join Room</button>
+        </div>
+        <div id="createRoomForm">
+            <label>Room Name:</label><input id="newRoomCode"/>
+            <button onclick="createRoom()">Create</button>
+        </div>
+        <div id="joinRoomForm">
+            <label>Room Name:</label><input id="roomCode"/>
+            <button onclick="joinRoom()">Join</button>
+        </div>
+    </div>
+    <div class="option" id="darkmodeSlider">
+        <image src="fontawesome/svgs/regular/sun.svg" class="icon md"/>
+        
+        <label class="switch">
+            <input type="checkbox" id="darkModeCheckbox" onchange="toggleDarkMode()" autocomplete="off">
+            <span class="slider"></span>
+        </label>
+        <image src="fontawesome/svgs/regular/moon.svg" class="icon md"/>
+    </div>
+</body>
+<script type="text/javascript" src="general.js"></script>
+<script type="text/javascript" src="roomGeneration.js"></script>
+</html>
