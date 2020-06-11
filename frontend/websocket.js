@@ -6,7 +6,7 @@ var ws;
  * Attempts to connect to the websocket.
  */
 function attemptConnection() {
-    ws = new WebSocket("ws://localhost:9999");
+    ws = new WebSocket("ws://64.227.7.152:9999");
     ws.onmessage = (e) => {
         var boardState = JSON.parse(e.data);
         console.log(boardState);
