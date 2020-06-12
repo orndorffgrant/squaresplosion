@@ -6,26 +6,28 @@ var ws;
  * Attempts to connect to the websocket.
  */
 function attemptConnection() {
-    ws = new WebSocket("ws://localhost:9999");
+    ws = new WebSocket("ws://64.227.7.152:9999");
     ws.onmessage = (e) => {
-        var player = JSON.parse(e.data);
-        console.log(player);
-        var playerExists = false;
-        for (var i = 0; i < otherPlayers.length; i++) {
-            if (otherPlayers[i].id == player.id) {
-                otherPlayers[i].x = player.x;
-                otherPlayers[i].y = player.y;
-                playerExists = true;
-                break;
-            }
-        }
-        if (!playerExists) {
-            // createOtherPlayer(player.id, player.x, player.y);
-        }
+        var boardState = JSON.parse(e.data);
+        console.log(boardState);
+        updatePlayerLocations(boardState.player_state);
+        
     }
     ws.onopen = () => {
+        var url = new URL(window.location.href);
+        var room = url.searchParams.get("room");
+        document.getElementById("roomCode").innerText = room;
+        var roomOwner = sessionStorage.getItem("newRoom");
+        var player = sessionStorage.getItem("playerName");
+        if (player === null) {
+            while (player === "" || player === null) {
+                var player = prompt ("Enter your player name:");
+            }
+            sessionStorage.setItem("playerName", player);
+        }
         connected = true;
-        ws.send(JSON.stringify({id: character.id, player_name: "scott", room_name: "default", x: character.x, y: character.y}));
+        ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y, newRoom: roomOwner}));
+        sessionStorage.removeItem("newRoom");
     }
 }
 

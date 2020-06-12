@@ -1,4 +1,8 @@
- /* The switch - the box around the slider */
+body {
+  font-family: blockFont;
+}
+
+/* The switch - the box around the slider */
  .switch {
     position: relative;
     display: inline-block;
@@ -100,4 +104,12 @@ body.darkmode button {
 
 body.darkmode .icon {
   filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg) brightness(103%) contrast(103%);
+}
+
+#joinRoomForm, #createRoomForm {
+  display: none;
+}
+
+#copyCode:hover {
+  cursor: pointer;
 }
