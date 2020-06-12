@@ -121,7 +121,6 @@ pub async fn run(incoming_events: types::ChannelReceiver<Event>) -> types::Serve
                 for player_sender in senders {
                     match player_sender.sender.send(ws_messages::RoomStateMessageEvent{
                         player_state: room.player_state.clone(),
-                        room_state: room.room_state.clone(),
                     }).await {
                         Ok(_) => {},
                         Err(e) => {

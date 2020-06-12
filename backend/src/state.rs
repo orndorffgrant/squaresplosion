@@ -17,7 +17,6 @@ pub struct PlayerState {
     pub alive: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
 pub struct CellState {
     pub player_id: Option<String>,
 }
