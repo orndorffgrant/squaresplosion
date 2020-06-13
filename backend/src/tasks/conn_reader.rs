@@ -61,7 +61,13 @@ pub async fn run(
     };
 
     trace!("conn_reader {}: parsing room join msg", conn_id);
-    let room_join: JoinRoomMessage = serde_json::from_str(room_join_msg.to_string().as_str())?;
+    let room_join: JoinRoomMessage = match serde_json::from_str(room_join_msg.to_string().as_str()) {
+        Ok(msg) => msg,
+        Err(e) => {
+            error!("conn_reader {}: failed to parse room msg: {}", conn_id, e);
+            return Ok(())
+        }
+    };
 
     trace!("conn_reader {}: player {} joining room {}", conn_id, room_join.player_name, room_join.room_name);
 
