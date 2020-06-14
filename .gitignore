@@ -1,0 +1,3 @@
+devca/**/*
+!devca/gen.sh
+!devca/policies.json

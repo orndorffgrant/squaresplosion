@@ -1,5 +1,7 @@
 use async_std::net::TcpStream;
 
+use async_tls::TlsAcceptor;
+
 use async_tungstenite::{
     tungstenite::protocol::Message,
     accept_async,
@@ -26,6 +28,7 @@ use crate::{
 
 pub async fn run(
     stream: TcpStream,
+    tls_acceptor: TlsAcceptor,
     mut event_broker: types::ChannelSender<Event>,
     conn_id: usize,
 ) -> types::ServerResult<()> {
@@ -37,7 +40,14 @@ pub async fn run(
             return Ok(())
         }
     };
-    let ws_stream = match accept_async(stream).await {
+    let tls_stream = match tls_acceptor.accept(stream).await {
+        Ok(s) => s,
+        Err(e) => {
+            error!("conn_reader {}: {}", conn_id, e);
+            return Ok(())
+        }
+    };
+    let ws_stream = match accept_async(tls_stream).await {
         Ok(s) => s,
         Err(e) => {
             error!("conn_reader {}: {}", conn_id, e);

@@ -11,25 +11,30 @@ use async_std::{
     task,
     io,
 };
-
+use async_tls::TlsAcceptor;
 use futures::{
     channel::mpsc,
     stream::{
         StreamExt,
     },
 };
-use async_tls::TlsAcceptor;
-
-use log::{trace, info};
+use log::{
+    trace,
+    info,
+};
 use pretty_env_logger;
-use std::fs::File;
-use std::io::BufReader;
-use std::net::ToSocketAddrs;
-use std::sync::Arc;
+use std::{
+    fs::File,
+    io::BufReader,
+    net::ToSocketAddrs,
+    path::PathBuf,
+    sync::Arc,
+};
 use structopt::StructOpt;
-use std::path::{Path, PathBuf};
-use rustls::internal::pemfile::{certs, rsa_private_keys};
-use rustls::{Certificate, NoClientAuth, PrivateKey, ServerConfig};
+use rustls::{
+    NoClientAuth,
+    ServerConfig
+};
 
 #[derive(StructOpt)]
 struct Options {
@@ -45,7 +50,6 @@ struct Options {
 fn main() -> types::ServerResult<()> {
     pretty_env_logger::init();
     trace!("starting up");
-
     task::block_on(run())
 }
 
@@ -74,7 +78,7 @@ async fn run() -> types::ServerResult<()> {
     let mut incoming = server.incoming();
 
     while let Some(stream) = incoming.next().await {
-        task::spawn(tasks::conn_reader::run(stream?, event_broker_sender.clone(), curr_conn_id));
+        task::spawn(tasks::conn_reader::run(stream?, acceptor.clone(), event_broker_sender.clone(), curr_conn_id));
         curr_conn_id += 1;
     }
 
@@ -85,14 +89,36 @@ async fn run() -> types::ServerResult<()> {
 }
 
 fn load_config(options: &Options) -> io::Result<ServerConfig> {
-    let cert_vec = certs(&mut BufReader::new(File::open(&options.cert)?))
+    let cert_vec = rustls::internal::pemfile::certs(&mut BufReader::new(File::open(&options.cert)?))
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))?;
-    let mut key_vec = rsa_private_keys(&mut BufReader::new(File::open(&options.key)?))
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid key"))?;
+
+    let rsa_keys = {
+        let keyfile = File::open(&options.key)?;
+        let mut reader = BufReader::new(keyfile);
+        rustls::internal::pemfile::rsa_private_keys(&mut reader)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid rsa key"))?
+    };
+
+    let pkcs8_keys = {
+        let keyfile = File::open(&options.key)?;
+        let mut reader = BufReader::new(keyfile);
+        rustls::internal::pemfile::pkcs8_private_keys(&mut reader)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid pkcs8 key"))?
+    };
+
+    // prefer to load pkcs8 keys
+    let key = {
+        if !pkcs8_keys.is_empty() {
+            pkcs8_keys[0].clone()
+        } else {
+            assert!(!rsa_keys.is_empty());
+            rsa_keys[0].clone()
+        }
+    };
 
     let mut config = ServerConfig::new(NoClientAuth::new());
     config
-        .set_single_cert(cert_vec, key_vec.remove(0))
+        .set_single_cert(cert_vec, key)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
 
     Ok(config)
