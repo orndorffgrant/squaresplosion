@@ -1,3 +1,6 @@
 devca/**/*
 !devca/gen.sh
 !devca/policies.json
+!devca/openssl-ca.cnf
+!devca/openssl-ca-signing.cnf
+!devca/openssl-localhost.cnf

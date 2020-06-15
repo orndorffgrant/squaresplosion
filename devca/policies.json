@@ -1,7 +1,7 @@
 {
   "policies": {
     "Certificates": {
-      "Install": ["devca.pem"]
+      "Install": ["devcacert.pem"]
     }
   }
 }
