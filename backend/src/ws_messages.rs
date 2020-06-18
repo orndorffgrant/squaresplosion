@@ -24,5 +24,4 @@ pub struct PlayerMoveMessage {
 #[derive(Serialize, Deserialize)]
 pub struct RoomStateMessageEvent {
     pub player_state: HashMap<String, state::PlayerState>,
-    pub room_state: HashMap<u32, HashMap<u32, state::CellState>>,
 }
