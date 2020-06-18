@@ -10,6 +10,7 @@ function attemptConnection() {
     ws.onmessage = (e) => {
         var boardState = JSON.parse(e.data);
         console.log(boardState);
+        updateLeaderboard(boardState.player_state);
         updatePlayerLocations(boardState.player_state);
         
     }
