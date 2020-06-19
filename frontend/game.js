@@ -30,8 +30,8 @@ function createGameMat() {
  *   return string (the color)
  */
 function getRandomColor() {
-    colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"];
-    return colors[Math.floor(Math.random() * 7)]
+    var colors = ["#42f5e3", "#ae35d0", "#f542a4", "#f54242","#f59942", "#7ed537", "#42f5e3"];
+    return colors[Math.floor(Math.random() * colors.length)]
   }
 
 /**
@@ -364,32 +364,34 @@ function addListener() {
             return;
         }
         var moved = false;
+        var x = character.x;
+        var y = character.y;
         switch(e.key) {
             case "ArrowUp":
             case "w":
-                if (character.y - 25 >= 0) {
-                    character.y -= 25;
+                if (y - 25 >= 0) {
+                    y -= 25;
                     moved = true;
                 }
                 break;
             case "ArrowDown":
             case "s":
-                if (character.y + 25 <= gameMat.canvas.height - 25) {
-                    character.y += 25;
+                if (y + 25 <= gameMat.canvas.height - 25) {
+                    y += 25;
                     moved = true;
                 }
                 break;
             case "ArrowLeft":
             case "a":
-                if (character.x - 25 >= 0) {
-                    character.x -= 25;
+                if (x - 25 >= 0) {
+                    x -= 25;
                     moved = true;
                 }
                 break;
             case "ArrowRight":
             case "d":
-                if (character.x + 25 <= gameMat.canvas.width - 25) {
-                    character.x += 25;
+                if (x + 25 <= gameMat.canvas.width - 25) {
+                    x += 25;
                     moved = true;
                 }
                 break;            
@@ -398,7 +400,7 @@ function addListener() {
         }
         if (moved) { 
             character.lastMoveTime = (new Date()).getTime();
-            sendLocation(character.id, character.x, character.y);
+            sendLocation(character.id, x, y);
         }
     })
 }
