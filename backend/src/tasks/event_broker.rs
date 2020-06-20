@@ -96,6 +96,22 @@ pub async fn run(incoming_events: types::ChannelReceiver<Event>) -> types::Serve
 
                 trace!("event_broker: spawning conn_writer for conn {}", conn_id);
                 task::spawn(tasks::conn_writer::run(conn_id, ws_sender, disconnect_sender.clone(), conn_outgoing_receiver, shutdown_receiver));
+
+                trace!("event_broker: sending player {} room state", player_id);
+                let ref mut senders = room.player_senders;
+                for player_sender in senders {
+                    if player_sender.conn_id == conn_id {
+                        match player_sender.sender.send(ws_messages::RoomStateMessageEvent{
+                            player_state: room.player_state.clone(),
+                        }).await {
+                            Ok(_) => {},
+                            Err(e) => {
+                                error!("event_broker: {}", e);
+                            }
+                        };
+                        break;
+                    }
+                }
             },
             Event::PlayerMove { from_id, player_id, x, y } => {
                 trace!("event_broker: received move from conn {} for player {}", from_id, player_id);
