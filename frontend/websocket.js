@@ -17,7 +17,7 @@ function attemptConnection() {
         var url = new URL(window.location.href);
         var room = url.searchParams.get("room");
         document.getElementById("roomCode").innerText = room;
-        var roomOwner = sessionStorage.getItem("newRoom");
+        var roomOwner = sessionStorage.getItem("newRoom") === "true";
         var player = sessionStorage.getItem("playerName");
         if (player === null) {
             while (player === "" || player === null) {

@@ -60,7 +60,12 @@ pub async fn run(
 
     trace!("conn_writer {}: sending disconnect", id);
     // TODO is this unwrap safe?
-    disconnect_sender.send(id).await.unwrap();
+    match disconnect_sender.send(id).await {
+        Ok(_) => {},
+        Err(e) => {
+            error!("conn_writer {}: error sending disconnect: {}", id, e);
+        },
+    };
     trace!("conn_writer {}: shutting down", id);
     Ok(())
 }

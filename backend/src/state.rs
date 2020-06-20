@@ -51,13 +51,10 @@ impl SquareRoomState {
         if player_state.alive
             && (
                 always_update
-                || (player_state.x == x - 25 && player_state.y == y)
-                || (player_state.x == x + 25 && player_state.y == y)
-                || (player_state.x == x && player_state.y == y - 25)
-                || (player_state.x == x && player_state.y == y + 25)
+                || player_state.x != x
+                || player_state.y != y
             )
         {
-
             // remove them from old location
             let old_row_opt = self.room_state.get_mut(&player_state.x);
             if let Some(old_row) = old_row_opt {
