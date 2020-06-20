@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 trap 'kill $(jobs -p)' EXIT
 npx serve --ssl-cert devca/localhostcert.pem --ssl-key devca/localhostkey.pem frontend &
 cd backend
