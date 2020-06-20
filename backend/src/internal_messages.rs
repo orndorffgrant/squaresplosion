@@ -8,6 +8,7 @@ pub enum Event {
         room_name: String,
         x: u32,
         y: u32,
+        new_room: bool,
         ws_sender: types::WebSocketSender,
         shutdown_receiver: types::ChannelReceiver<types::Void>
     },

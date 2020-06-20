@@ -8,9 +8,12 @@ use futures::{
     FutureExt,
 };
 
-use log::{trace, error};
+use log::{info, trace, error};
 
-use std::collections::hash_map::HashMap;
+use std::collections::hash_map::{
+    Entry,
+    HashMap,
+};
 
 use crate::{
     internal_messages::Event,
@@ -78,14 +81,36 @@ pub async fn run(incoming_events: types::ChannelReceiver<Event>) -> types::Serve
                 room_name,
                 x,
                 y,
-                ws_sender,
+                new_room,
+                mut ws_sender,
                 shutdown_receiver
             } => {
                 trace!("event_broker: received new conn from conn {} player {} for room {}", conn_id, player_id, room_name);
-                let room = rooms.entry(room_name.to_string()).or_insert_with(|| {
-                    trace!("event_broker: room {} doesn't exist, creating", room_name);
-                    state::SquareRoomState::new(room_name.as_str())
-                });
+                let room_intermediate = rooms.entry(room_name.to_string());
+                let room = {
+                    if new_room {
+                        match room_intermediate {
+                            Entry::Vacant(_) => {
+                                info!("event_broker: received new_room message for an existing room, terminating connection");
+                                match ws_sender.close().await {
+                                    Ok(_) => {
+                                        return Ok(());
+                                    },
+                                    Err(e) => {
+                                        error!("failed to close ws_sender: {}", e);
+                                        return Ok(());
+                                    },
+                                }
+                            }
+                            Entry::Occupied(e) => e.into_mut(),
+                        }
+                    } else {
+                        room_intermediate.or_insert_with(|| {
+                            trace!("event_broker: room {} doesn't exist, creating", room_name);
+                            state::SquareRoomState::new(room_name.as_str())
+                        })
+                    }
+                };
 
                 trace!("event_broker: adding player {} to room {}", player_id, room_name);
                 let (conn_outgoing_sender, conn_outgoing_receiver) = mpsc::unbounded();
