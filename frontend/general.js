@@ -61,3 +61,32 @@ function copyToClipboard(id) {
     window.getSelection().addRange(range);
     document.execCommand("copy");
 }
+
+/**
+ * Updates the leaderboard. Currently is called from websocket.js
+ * @param obj players : the player states
+ */
+function updateLeaderboard(players) {
+    var playerOrder = [];
+    for (var key in players) {
+        var color = "";
+        if(character.id == key) {
+            color = character.color;
+        } else {
+            for (var i = 0; i < otherPlayers.length; i++) {
+                if (otherPlayers[i].id == key) {
+                    color = otherPlayers[i].color;
+                    break;
+                }  
+            }
+        }
+        playerOrder.push({"name": players[key].name, "score": players[key].score, "color": color});
+    }
+    playerOrder.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+
+    var leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "<tr><th>Name</th><th>Score</th></tr>";
+    playerOrder.forEach(element => {
+        leaderboard.innerHTML += "<tr style='color:" + element.color + "'><td>" + element.name + "</td><td>" + element.score + "</td></tr>";
+    });
+}

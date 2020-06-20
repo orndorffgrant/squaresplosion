@@ -54,11 +54,22 @@ body {
     transform: translateX(26px);
   }
 
+  #wrapper {
+    height: 50px;
+    width: 100%;
+    position: relative;
+  }
+
   #optionsWrapper {
     position: fixed;
     bottom: 0;
     width: 100%;
     padding:5px;
+  }
+
+  #leaderboardDiv {
+    min-height: 300px;
+    width: 100%;
   }
 
 .option {
@@ -112,4 +123,13 @@ body.darkmode .icon {
 
 #copyCode:hover {
   cursor: pointer;
+}
+
+#leaderboard {
+  width: 25%;
+}
+
+#leaderboard th {
+  text-align: left;
+  text-decoration: underline;
 }

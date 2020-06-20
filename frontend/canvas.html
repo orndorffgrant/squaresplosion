@@ -23,6 +23,14 @@
                 <image src="fontawesome/svgs/regular/copy.svg" id="copyCode" class="icon md" onclick="copyToClipboard('roomCode')"/>
             </div>
         </div>
+        <div id="leaderboardDiv">
+            <table id="leaderboard">
+                <tr>
+                    <th>Name</th>
+                    <th>Score</th>
+                </tr>
+            </table>
+        </div>
         <div id="optionsWrapper">
             <div class="option" id="darkmodeSlider">
                 <image src="fontawesome/svgs/regular/sun.svg" class="icon md"/>
@@ -43,7 +51,8 @@
         
         
     </body>
+    <script type="text/javascript" src="general.js"></script>
     <script type="text/javascript" src="websocket.js"></script>
     <script type="text/javascript" src="game.js"></script>
-    <script type="text/javascript" src="general.js"></script>
+    
 </html>
