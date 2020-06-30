@@ -1,0 +1,9 @@
+devca/**/*
+!devca/gen_certs.sh
+!devca/install_mac_firefoxdev.sh
+!devca/install_ubuntu_firefox.sh
+!devca/openssl-ca.cnf
+!devca/openssl-ca-signing.cnf
+!devca/openssl-localhost.cnf
+!devca/policies.json
+

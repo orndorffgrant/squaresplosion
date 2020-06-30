@@ -13,6 +13,7 @@ pub struct JoinRoomMessage {
     pub room_name: String,
     pub x: u32,
     pub y: u32,
+    pub new_room: bool,
 }
 
 #[derive(Serialize, Deserialize)]

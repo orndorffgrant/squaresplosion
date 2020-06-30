@@ -44,12 +44,17 @@ impl SquareRoomState {
             room_state: HashMap::new(),
         }
     }
-    fn update_cell(&mut self, id: &str, x: u32, y: u32) -> &SquareRoomState {
+    fn update_cell(&mut self, id: &str, x: u32, y: u32, always_update: bool) -> &SquareRoomState {
         // TODO unwraps all over
         let player_state = self.player_state.get_mut(id).unwrap();
         let mut to_kill = None;
-        if player_state.alive {
-
+        if player_state.alive
+            && (
+                always_update
+                || player_state.x != x
+                || player_state.y != y
+            )
+        {
             // remove them from old location
             let old_row_opt = self.room_state.get_mut(&player_state.x);
             if let Some(old_row) = old_row_opt {
@@ -104,10 +109,10 @@ impl SquareRoomState {
             y,
             alive: true,
         });
-        self.update_cell(id, x, y);
+        self.update_cell(id, x, y, true);
     }
     pub fn update_player(&mut self, id: &str, x: u32, y: u32) {
-        self.update_cell(id, x, y);
+        self.update_cell(id, x, y, false);
         let curr_player_state = self.player_state.get_mut(id).unwrap();
         curr_player_state.score += 1;
     }

@@ -18,16 +18,16 @@ function attemptConnection() {
         var url = new URL(window.location.href);
         var room = url.searchParams.get("room");
         document.getElementById("roomCode").innerText = room;
-        var roomOwner = sessionStorage.getItem("newRoom");
+        var roomOwner = sessionStorage.getItem("newRoom") === "true";
         var player = sessionStorage.getItem("playerName");
         if (player === null) {
             while (player === "" || player === null) {
-                var player = prompt ("Enter your player name:");
+                var player = prompt("Enter your player name (this name will be saved for future games):");
             }
             sessionStorage.setItem("playerName", player);
         }
         connected = true;
-        ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y, newRoom: roomOwner}));
+        ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y, new_room: roomOwner}));
         sessionStorage.removeItem("newRoom");
     }
 }

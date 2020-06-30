@@ -90,6 +90,7 @@ pub async fn run(
         room_name: room_join.room_name,
         x: room_join.x,
         y: room_join.y,
+        new_room: room_join.new_room,
         ws_sender: outgoing,
         shutdown_receiver: connection_shutdown_receiver,
     }).await {
