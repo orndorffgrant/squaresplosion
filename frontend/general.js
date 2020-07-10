@@ -15,20 +15,27 @@ function toggleDarkMode() {
         //    bot.color = "#FFFFFF";
         //});
         document.getElementById("darkmodeSlider").classList.add("on");
+        localStorage.setItem("darkmode", "on");
     } else {
         //Disables dark mode
         body.classList.remove("darkmode");
-        
+
         darkmode = false; //used in game.js
         //bots.forEach(bot => {
         //    bot.color = "#000000";
         //});
         document.getElementById("darkmodeSlider").classList.remove("on");
+        localStorage.setItem("darkmode", "off");
     }
 }
 
-//Toggles dark mode based on user preferences. 
+//Toggles dark mode based on user preferences.
 if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.getElementById("darkModeCheckbox").click();
+}
+
+//Toggles dark mode if they've turned it on before.
+if (localStorage.getItem("darkmode") === "on") {
     document.getElementById("darkModeCheckbox").click();
 }
 

@@ -6,34 +6,192 @@
             src: url(FFFFORWA.TTF);
         }
     </style>
-    <title>Squaresplosion</title>
+    <title>SquareSplosion</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <meta charset="utf-8"/>
+    <style>
+        .title {
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+        .title__title-container {
+            display: flex;
+            justify-content: center;
+        }
+        .title__title {
+            font-family: blockFont;
+            font-size: 4rem;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .title__subtitle-container {
+            display: flex;
+            justify-content: center;
+            padding-top: 2rem;
+        }
+        .title__subtitle {
+            font-family: blockFont;
+            font-size: 2rem;
+            margin: 0;
+        }
+        .form {
+            display: flex;
+            justify-content: center;
+        }
+        .form__title {
+            text-align: center;
+            font-size: 1.2rem;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .form__code-entry-container {
+            display: flex;
+            align-items: baseline;
+        }
+        .form__code-entry-label {
+            padding-right: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        .form__code-entry-hint {
+            font-size: 0.7rem;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+        }
+        .form__code-entry-input {
+            outline: none;
+            margin: 1px;
+            border-width: 3px;
+            border-radius: 0;
+            border-style: solid;
+            border-color: black;
+            padding: 0.5rem;
+            padding-top: 0.75rem;
+            font-family: monospace;
+            font-size: 1rem;
+            min-width: 18rem;
+        }
+        .form__code-entry-input:focus {
+            margin: 0;
+            border-width: 4px;
+        }
+        .form__join-container {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 2rem;
+        }
+        button {
+            text-transform: uppercase;
+            font-family: blockFont;
+            border-width: 4px;
+            border-radius: 0;
+            border-style: solid;
+            border-color: black;
+            padding: 0.5rem;
+            padding-top: 0.75rem;
+            box-shadow: -4px 4px #42f5e3;
+            transform: translateX(4px) translateY(-4px);
+            cursor: pointer;
+        }
+        button:hover {
+            box-shadow: -6px 6px #ae35d0;
+            transform: translateX(6px) translateY(-6px);
+        }
+        button:active {
+            box-shadow: -2px 2px #f542a4;
+            transform: translateX(2px) translateY(-2px);
+        }
+        .form__code-entry-caption{
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            padding-top: 0.5rem;
+            padding-bottom: 2rem;
+        }
+        .form__random-button {
+            padding: 0.25rem;
+            padding-top: 0.375rem;
+            font-size: 0.75rem;
+            box-shadow: -3px 3px #f59942;
+        }
+        .form__option-container {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 2rem;
+        }
+        .form__checkbox-container .form__checkbox-input {
+            display: none;
+        }
+        .form__checkbox-container .form__checkbox-label {
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .form__checkbox-container .form__checkbox-label:before {
+            display: inline-block;
+            content: "\00a0"; /* Blank space */
+            height: 1rem;
+            width: 1rem;
+            margin-right: 0.5rem;
+            text-align: center;
+            border-width: 3px;
+            border-style: solid;
+            border-radius: 0;
+            border-color: black;
+            box-shadow: inset 4px 4px whitesmoke, inset -4px -4px whitesmoke;
+            background-color: whitesmoke;
+        }
+        .form__checkbox-container .form__checkbox-input:checked ~ .form__checkbox-label:before {
+            background-color: black;
+        }
+        .form__checkbox-container .form__checkbox-label:hover:before {
+            box-shadow: inset 4px 4px #ddd, inset -4px -4px #ddd;
+            background-color: #ddd;
+        }
+    </style>
 </head>
 <body>
-    <div class="divWrap">
-        <div>
-            <label>Player Name:</label><input id="playerName"/>
-            <button onclick="createRoom()">Create Room</button>
-            <button onclick="joinRoom()">Join Room</button>
+    <div class="title">
+        <div class="title__title-container">
+            <h1 class="title__title">SquareSplosion</h1>
         </div>
-        <div id="createRoomForm">
-            <label>Room Name:</label><input id="newRoomCode"/>
-            <button onclick="createRoom()">Create</button>
-        </div>
-        <div id="joinRoomForm">
-            <label>Room Name:</label><input id="roomCode"/>
-            <button onclick="joinRoom()">Join</button>
+        <div class="title__subtitle-container">
+            <h2 class="title__subtitle">gird your squares</h2>
         </div>
     </div>
-    <div class="option" id="darkmodeSlider">
-        <image src="fontawesome/svgs/regular/sun.svg" class="icon md"/>
-        
-        <label class="switch">
-            <input type="checkbox" id="darkModeCheckbox" onchange="toggleDarkMode()" autocomplete="off">
-            <span class="slider"></span>
-        </label>
-        <image src="fontawesome/svgs/regular/moon.svg" class="icon md"/>
+    <div class="form">
+        <div class="form__container">
+            <div class="form__title">
+                Join a Square Room
+            </div>
+            <div class="form__code-entry-container">
+                <label class="form__code-entry-label" for="roomCode">Room Name:</label>
+                <input type="text" class="form__code-entry-input" id="roomCode" name="roomCode" placeholder=" "/>
+            </div>
+            <div class="form__code-entry-caption">
+                <span class="form__code-entry-hint">^Just make something up or </span>
+                <button class="form__random-button" onclick="genRoomName()">Randomize</button>
+            </div>
+            <div class="form__option-container">
+                <div class="form__checkbox-container">
+                    <input class="form__checkbox-input" type="checkbox" name="abortIfOccupied" id="abortIfOccupied"/>
+                    <label class="form__checkbox-label" for="abortIfOccupied">Abort if room is occupied?</label>
+                </div>
+            </div>
+            <div class="form__join-container">
+                <button class="form__join-button" onclick="joinRoom()">Splode!</button>
+            </div>
+        </div>
+    </div>
+    <div id="optionsWrapper">
+        <div class="option" id="darkmodeSlider">
+            <image src="fontawesome/svgs/regular/sun.svg" class="icon md"/>
+
+            <label class="switch">
+                <input type="checkbox" id="darkModeCheckbox" onchange="toggleDarkMode()" autocomplete="off">
+                <span class="slider"></span>
+            </label>
+            <image src="fontawesome/svgs/regular/moon.svg" class="icon md"/>
+        </div>
     </div>
 </body>
 <script type="text/javascript" src="general.js"></script>

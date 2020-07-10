@@ -22,7 +22,7 @@ function attemptConnection() {
         var player = sessionStorage.getItem("playerName");
         if (player === null) {
             while (player === "" || player === null) {
-                var player = prompt("Enter your player name (this name will be saved for future games):");
+                var player = prompt("Enter your name (we'll save this for future games):");
             }
             sessionStorage.setItem("playerName", player);
         }
