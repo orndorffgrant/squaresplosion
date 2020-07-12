@@ -9,7 +9,6 @@ function attemptConnection() {
     ws = new WebSocket("wss://ws.squaresplosion.com:9999");
     ws.onmessage = (e) => {
         var boardState = JSON.parse(e.data);
-        console.log(boardState);
         updateLeaderboard(boardState.player_state);
         updatePlayerLocations(boardState.player_state);
         
@@ -18,6 +17,7 @@ function attemptConnection() {
         var url = new URL(window.location.href);
         var room = url.searchParams.get("room");
         document.getElementById("roomCode").innerText = room;
+        document.getElementById("roomLink").innerText = "https://game.squaresplosion.com/splode?room=" + room;
         var roomOwner = sessionStorage.getItem("newRoom") === "true";
         var player = sessionStorage.getItem("playerName");
         if (player === null) {

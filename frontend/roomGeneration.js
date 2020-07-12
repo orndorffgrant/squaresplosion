@@ -23,7 +23,7 @@ function validateRoomCode(roomCode) {
 
 function goToRoom(roomId, newRoom) {
     sessionStorage.setItem("newRoom", newRoom);
-    window.location.href = "canvas?room=" + roomId;
+    window.location.href = "splode?room=" + roomId;
 }
 
 function capitalize(word) {

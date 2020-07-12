@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            @font-face {
+                font-family: "blockFont";
+                src: url(FFFFORWA.TTF);
+            }
+        </style>
+        <title>Squaresplosion</title>
+        <link rel="stylesheet" type="text/css" href="styles.css">
+        <meta charset="utf-8"/>
+        <style>
+            .board {
+                width: 800px;
+                margin: auto;
+                line-height: 2;
+            }
+            .share__name-container {
+                display: flex;
+                align-items: baseline;
+            }
+            .share__name-label {
+                padding-right: 0.5rem;
+            }
+            .share__name {
+                font-size: 1.5rem;
+                line-height: normal;
+                font-family: monospace;
+                padding-right: 0.5rem;
+            }
+            .share__link-container {
+                display: flex;
+                align-items: center;
+            }
+            .share__link-label {
+                padding-right: 0.5rem;
+            }
+            .share__link {
+                font-size: 0.75rem;
+                line-height: normal;
+                font-family: monospace;
+                padding-right: 0.5rem;
+            }
+            .share__copy-icon {
+                cursor: pointer;
+            }
+        </style>
+    </head>
+
+    <body onload="startGame()">
+        <div class="board">
+            <canvas class="board__canvas" id="grid" width="800" height="500" style="border:10px solid black; margin:auto">
+                Sorry, your browser does not support this. Try downloading Firefox.
+            </canvas>
+            <div class="share">
+                <div class="share__message">
+                    Invite your friends to play!
+                </div>
+                <div class="share__name-container">
+                    <div class="share__name-label">Share the Room Name: </div>
+                    <div class="share__name" id="roomCode"></div>
+                    <image class="share__copy-icon icon md" src="fontawesome/svgs/regular/copy.svg" id="copyCode" onclick="copyToClipboard('roomCode')"/>
+                </div>
+                <div class="share__link-container">
+                    <div class="share__link-label">Or send the link:</div>
+                    <div class="share__link" id="roomLink"></div>
+                    <image class="share__copy-icon icon md" src="fontawesome/svgs/regular/copy.svg" id="copyLink" onclick="copyToClipboard('roomLink')"/>
+                </div>
+            </div>
+            <div>
+                <table class="leaderboard">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="optionsWrapper">
+            <div class="option" id="darkmodeSlider">
+                <image src="fontawesome/svgs/regular/sun.svg" class="icon md"/>
+
+                <label class="switch">
+                    <input type="checkbox" id="darkModeCheckbox" onchange="toggleDarkMode()" autocomplete="off">
+                    <span class="slider"></span>
+                </label>
+                <image src="fontawesome/svgs/regular/moon.svg" class="icon md"/>
+            </div>
+        </div>
+
+        <template id="leaderboardRowTemplate">
+            <tr>
+                <td></td>
+                <td></td>
+            </tr>
+        </template>
+        <script type="text/javascript" src="general.js"></script>
+        <script type="text/javascript" src="websocket.js"></script>
+        <script type="text/javascript" src="game.js"></script>
+    </body>
+</html>

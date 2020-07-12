@@ -65,6 +65,7 @@ window.matchMedia('(prefers-color-scheme: no-preference)').addListener(e => {
 function copyToClipboard(id) {
     var range = document.createRange();
     range.selectNode(document.getElementById(id));
+    window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     document.execCommand("copy");
 }
@@ -91,9 +92,16 @@ function updateLeaderboard(players) {
     }
     playerOrder.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
 
-    var leaderboard = document.getElementById("leaderboard");
-    leaderboard.innerHTML = "<tr><th>Name</th><th>Score</th></tr>";
+    var leaderboard = document.getElementById("leaderboardBody");
+    leaderboard.innerHTML = "";
+    var template = document.getElementById("leaderboardRowTemplate")
     playerOrder.forEach(element => {
-        leaderboard.innerHTML += "<tr style='color:" + element.color + "'><td>" + element.name + "</td><td>" + element.score + "</td></tr>";
+        var clone = template.content.cloneNode(true);
+        var tr = clone.querySelector("tr");
+        var tds = clone.querySelectorAll("td");
+        tr.style.color = element.color;
+        tds[0].textContent = element.name;
+        tds[1].textContent = element.score;
+        leaderboard.appendChild(clone);
     });
 }
