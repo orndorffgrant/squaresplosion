@@ -15,7 +15,7 @@ function createGameMat() {
             this.canvas.width = this.canvas.getAttribute("width");
             this.canvas.height = this.canvas.getAttribute("height");;
             this.context = this.canvas.getContext("2d");
-            this.interval = setInterval(updateGameArea, 20);
+            this.interval = setInterval(updateGameArea, 50);
         },
         clear: function() {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -78,7 +78,7 @@ function getBotValidPosition() {
     validPosition = true;
     var randomX = Math.floor(Math.random() * ((gameMat.canvas.width / 25))) * 25;
     var randomY = Math.floor(Math.random() * ((gameMat.canvas.height / 25))) * 25;
-    
+
     for (var i = 0; i < bots.length; i++) {
         if (randomX == bots[i].x && randomY == bots[i].y) {
             validPosition = false;
@@ -98,7 +98,7 @@ function getBotValidPosition() {
 
 /**
  * moveBots()
- *   Generates a random number between 0 and 4. Each number means a different move. 
+ *   Generates a random number between 0 and 4. Each number means a different move.
  */
 function moveBots() {
     var moved;
@@ -138,7 +138,7 @@ function moveBots() {
                     bots[i].lastmove = move;
                     moved = true;
                 }
-                break;           
+                break;
             default:
                 break;
         }
@@ -407,15 +407,15 @@ function addListener() {
             var y = currTouch.screenY - lastTouch.screenY;
             var useX = Math.abs(x) > Math.abs(y);
             if (useX) {
-                if (x < 0) {
+                if (x < -10) {
                     character.dir = "left";
-                } else {
+                } else if (x > 10) {
                     character.dir = "right";
                 }
             } else {
-                if (y < 0) {
+                if (y < -10) {
                     character.dir = "up";
-                } else {
+                } else if (y > 10) {
                     character.dir = "down";
                 }
             }
