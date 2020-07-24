@@ -34,8 +34,7 @@ pub struct SquareRoomState {
     pub player_senders: Vec<PlayerSender>,
     pub conn_player_map: HashMap<usize, String>,
     pub player_state: HashMap<String, PlayerState>,
-    pub room_state: HashMap<u32, HashMap<u32, CellState>>,
-    pub room_state_new: Vec<Vec<CellState>>,
+    pub room_state: Vec<Vec<CellState>>,
 }
 
 impl SquareRoomState {
@@ -45,8 +44,7 @@ impl SquareRoomState {
             player_senders: Vec::new(),
             conn_player_map: HashMap::new(),
             player_state: HashMap::new(),
-            room_state: HashMap::new(),
-            room_state_new: vec![
+            room_state: vec![
                 vec![ CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None} ],
                 vec![ CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None} ],
                 vec![ CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None}, CellState{player_id: None} ],
@@ -91,9 +89,9 @@ impl SquareRoomState {
             let new_y_index: usize = (y / 25).try_into().unwrap();
 
             // remove them from old location
-            self.room_state_new[old_y_index][old_x_index].player_id = None;
+            self.room_state[old_y_index][old_x_index].player_id = None;
 
-            let cell = &mut self.room_state_new[new_y_index][new_x_index];
+            let cell = &mut self.room_state[new_y_index][new_x_index];
             // if cell has another player, kill them
             if let Some(ref other_player_id) = cell.player_id {
                 if !other_player_id.eq(id) {
