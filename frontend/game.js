@@ -15,12 +15,12 @@ function createGameMat() {
             this.canvas.width = this.canvas.getAttribute("width");
             this.canvas.height = this.canvas.getAttribute("height");;
             this.context = this.canvas.getContext("2d");
-            this.interval = setInterval(updateGameArea, 20);
+            this.interval = setInterval(updateGameArea, 50);
         },
         clear: function() {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
-    }   
+    }
 }
 
 /**
@@ -50,7 +50,7 @@ function startGame() {
 }
 
 /**
- * addBot() 
+ * addBot()
  *   Adds a bot that will move randomly every 1/4 a second
  */
 function addBot() {
@@ -78,7 +78,7 @@ function getBotValidPosition() {
     validPosition = true;
     var randomX = Math.floor(Math.random() * ((gameMat.canvas.width / 25))) * 25;
     var randomY = Math.floor(Math.random() * ((gameMat.canvas.height / 25))) * 25;
-    
+
     for (var i = 0; i < bots.length; i++) {
         if (randomX == bots[i].x && randomY == bots[i].y) {
             validPosition = false;
@@ -98,7 +98,7 @@ function getBotValidPosition() {
 
 /**
  * moveBots()
- *   Generates a random number between 0 and 4. Each number means a different move. 
+ *   Generates a random number between 0 and 4. Each number means a different move.
  */
 function moveBots() {
     var moved;
@@ -138,7 +138,7 @@ function moveBots() {
                     bots[i].lastmove = move;
                     moved = true;
                 }
-                break;           
+                break;
             default:
                 break;
         }
@@ -152,12 +152,12 @@ function moveBots() {
 /**
  * component()
  *   Creates the characters
- *   @param int width 
- *   @param int height 
- *   @param string color 
- *   @param int x 
- *   @param int y 
- *   @param string playerType 
+ *   @param int width
+ *   @param int height
+ *   @param string color
+ *   @param int x
+ *   @param int y
+ *   @param string playerType
  */
 function component(width, height, color, x, y, playerType, id = null) {
     if (id === null) {
@@ -172,7 +172,46 @@ function component(width, height, color, x, y, playerType, id = null) {
     this.lastMoveTime = (new Date()).getTime();
     this.x = x;
     this.y = y;
+    this.dir = "none";
+    this.moveX = x;
+    this.moveY = y;
     this.active = true;
+    this.move = function() {
+        var moved = false;
+        var newX = this.moveX;
+        var newY = this.moveY;
+        switch(this.dir) {
+            case "up":
+                if (this.y - 25 >= 0) {
+                    newY = this.y - 25;
+                }
+                break;
+            case "down":
+                if (this.y + 25 <= gameMat.canvas.height - 25) {
+                    newY = this.y + 25;
+                }
+                break;
+            case "left":
+                if (this.x - 25 >= 0) {
+                    newX = this.x - 25;
+                }
+                break;
+            case "right":
+                if (this.x + 25 <= gameMat.canvas.width - 25) {
+                    newX = this.x + 25;
+                }
+                break;
+            default:
+                break;
+        }
+        moved = newX !== this.moveX || newY !== this.moveY;
+        if (moved) {
+            this.moveX = newX;
+            this.moveY = newY;
+            this.lastMoveTime = (new Date()).getTime();
+            sendLocation(this.id, this.moveX, this.moveY);
+        }
+    }
     this.update = function() {
         ctx = gameMat.context;
         ctx.fillStyle = this.color;
@@ -217,7 +256,7 @@ function component(width, height, color, x, y, playerType, id = null) {
             } else if (this.explodeParticles[i][3] == 1) {
                 this.explodeMove("x", i);
                 this.explodeMove("y", i);
-                
+
             } else if (this.explodeParticles[i][3] == 2) {
                 if (Math.floor(Math.random() * 2) === 0) { //Little bit of randomness to help it look better
                     this.explodeMove("x", i);
@@ -233,7 +272,7 @@ function component(width, height, color, x, y, playerType, id = null) {
             }
 
             this.explodeParticles[i][2]--;
-            
+
             ctx = gameMat.context;
             ctx.fillStyle = this.color;
             ctx.fillRect(this.explodeParticles[i][0], this.explodeParticles[i][1], 1, 1);
@@ -266,6 +305,7 @@ function component(width, height, color, x, y, playerType, id = null) {
 function updateGameArea() {
     gameMat.clear();
     if (character.active) {
+        character.move();
         character.update();
     } else if (!character.exploding && character.explodeParticles.length == 0) {
         character.getExplodeParticles();
@@ -318,12 +358,12 @@ function removePlayers(players) {
             }
         }
     });
-    
+
 }
 
 /**
  * checkCollisiions()
- * Checks to see if any players collided. 
+ * Checks to see if any players collided.
  */
 function checkCollisions() {
     var allPlayers = bots.slice(0);
@@ -358,50 +398,61 @@ function checkCollisions() {
  *   Adds the keydown listener for the player movement
  */
 function addListener() {
-    document.addEventListener("keydown", function(e) {
-        if (!character.active) {
-            return;
+    var lastTouch;
+    document.addEventListener("touchmove", function(e) {
+        e.preventDefault();
+        var currTouch = e.changedTouches[0];
+        if (lastTouch) {
+            var x = currTouch.screenX - lastTouch.screenX;
+            var y = currTouch.screenY - lastTouch.screenY;
+            var useX = Math.abs(x) > Math.abs(y);
+            if (useX) {
+                if (x < -10) {
+                    character.dir = "left";
+                } else if (x > 10) {
+                    character.dir = "right";
+                }
+            } else {
+                if (y < -10) {
+                    character.dir = "up";
+                } else if (y > 10) {
+                    character.dir = "down";
+                }
+            }
         }
-        var moved = false;
-        var x = character.x;
-        var y = character.y;
+        lastTouch = currTouch;
+    });
+    document.addEventListener("touchend", function(e) {
+        e.preventDefault();
+        character.dir = "none";
+    });
+    document.addEventListener("keydown", function(e) {
+        e.preventDefault();
         switch(e.key) {
             case "ArrowUp":
             case "w":
-                if (y - 25 >= 0) {
-                    y -= 25;
-                    moved = true;
-                }
+                character.dir = "up";
                 break;
             case "ArrowDown":
             case "s":
-                if (y + 25 <= gameMat.canvas.height - 25) {
-                    y += 25;
-                    moved = true;
-                }
+                character.dir = "down";
                 break;
             case "ArrowLeft":
             case "a":
-                if (x - 25 >= 0) {
-                    x -= 25;
-                    moved = true;
-                }
+                character.dir = "left";
                 break;
             case "ArrowRight":
             case "d":
-                if (x + 25 <= gameMat.canvas.width - 25) {
-                    x += 25;
-                    moved = true;
-                }
-                break;            
+                character.dir = "right";
+                break;
             default:
                 break;
         }
-        if (moved) { 
-            character.lastMoveTime = (new Date()).getTime();
-            sendLocation(character.id, x, y);
-        }
-    })
+    });
+    document.addEventListener("keyup", function(e) {
+        e.preventDefault();
+        character.dir = "none";
+    });
 }
 
 
