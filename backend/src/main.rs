@@ -1,40 +1,19 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 mod internal_messages;
-mod ws_messages;
 mod state;
-mod types;
 mod tasks;
+mod types;
+mod ws_messages;
 
-use async_std::{
-    net::TcpListener,
-    task,
-    io,
-};
+use async_std::{io, net::TcpListener, task};
 use async_tls::TlsAcceptor;
-use futures::{
-    channel::mpsc,
-    stream::{
-        StreamExt,
-    },
-};
-use log::{
-    trace,
-    info,
-};
+use futures::{channel::mpsc, stream::StreamExt};
+use log::{info, trace};
 use pretty_env_logger;
-use std::{
-    fs::File,
-    io::BufReader,
-    net::ToSocketAddrs,
-    path::PathBuf,
-    sync::Arc,
-};
+use rustls::{NoClientAuth, ServerConfig};
+use std::{fs::File, io::BufReader, net::ToSocketAddrs, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
-use rustls::{
-    NoClientAuth,
-    ServerConfig
-};
 
 #[derive(StructOpt)]
 struct Options {
@@ -78,7 +57,12 @@ async fn run() -> types::ServerResult<()> {
     let mut incoming = server.incoming();
 
     while let Some(stream) = incoming.next().await {
-        task::spawn(tasks::conn_reader::run(stream?, acceptor.clone(), event_broker_sender.clone(), curr_conn_id));
+        task::spawn(tasks::conn_reader::run(
+            stream?,
+            acceptor.clone(),
+            event_broker_sender.clone(),
+            curr_conn_id,
+        ));
         curr_conn_id += 1;
     }
 
@@ -89,8 +73,9 @@ async fn run() -> types::ServerResult<()> {
 }
 
 fn load_config(options: &Options) -> io::Result<ServerConfig> {
-    let cert_vec = rustls::internal::pemfile::certs(&mut BufReader::new(File::open(&options.cert)?))
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))?;
+    let cert_vec =
+        rustls::internal::pemfile::certs(&mut BufReader::new(File::open(&options.cert)?))
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))?;
 
     let rsa_keys = {
         let keyfile = File::open(&options.key)?;

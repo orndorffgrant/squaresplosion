@@ -2,28 +2,16 @@ use async_std::net::TcpStream;
 
 use async_tls::TlsAcceptor;
 
-use async_tungstenite::{
-    tungstenite::protocol::Message,
-    accept_async,
-};
+use async_tungstenite::{accept_async, tungstenite::protocol::Message};
 
-use futures::{
-    channel::mpsc,
-    sink::SinkExt,
-    stream::{
-        StreamExt,
-    },
-};
+use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 
-use log::{info, trace, error};
+use log::{error, info, trace};
 
 use crate::{
     internal_messages::Event,
     types,
-    ws_messages::{
-        PlayerMoveMessage,
-        JoinRoomMessage,
-    },
+    ws_messages::{JoinRoomMessage, PlayerMoveMessage},
 };
 
 pub async fn run(
@@ -37,87 +25,105 @@ pub async fn run(
         Ok(p) => p,
         Err(e) => {
             error!("conn_reader {}: {}", conn_id, e);
-            return Ok(())
+            return Ok(());
         }
     };
     let tls_stream = match tls_acceptor.accept(stream).await {
         Ok(s) => s,
         Err(e) => {
             error!("conn_reader {}: {}", conn_id, e);
-            return Ok(())
+            return Ok(());
         }
     };
     let ws_stream = match accept_async(tls_stream).await {
         Ok(s) => s,
         Err(e) => {
             error!("conn_reader {}: {}", conn_id, e);
-            return Ok(())
+            return Ok(());
         }
     };
     info!("conn_reader {}: new conn from {}", conn_id, peer_addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
 
-    let (_connection_shutdown_sender, connection_shutdown_receiver) = mpsc::unbounded::<types::Void>();
+    let (_connection_shutdown_sender, connection_shutdown_receiver) =
+        mpsc::unbounded::<types::Void>();
 
     trace!("conn_reader {}: waiting for room join msg", conn_id);
-    let room_join_msg: Message = match incoming.next().await
-     {
+    let room_join_msg: Message = match incoming.next().await {
         Some(m) => m?,
         None => {
-            error!("conn_reader {}: connection didn't send room join msg", conn_id);
+            error!(
+                "conn_reader {}: connection didn't send room join msg",
+                conn_id
+            );
             return Ok(());
-        },
+        }
     };
 
     trace!("conn_reader {}: parsing room join msg", conn_id);
-    let room_join: JoinRoomMessage = match serde_json::from_str(room_join_msg.to_string().as_str()) {
+    let room_join: JoinRoomMessage = match serde_json::from_str(room_join_msg.to_string().as_str())
+    {
         Ok(msg) => msg,
         Err(e) => {
             error!("conn_reader {}: failed to parse room msg: {}", conn_id, e);
-            return Ok(())
+            return Ok(());
         }
     };
 
-    trace!("conn_reader {}: player {} joining room {}", conn_id, room_join.player_name, room_join.room_name);
+    trace!(
+        "conn_reader {}: player {} joining room {}",
+        conn_id,
+        room_join.player_name,
+        room_join.room_name
+    );
 
     let player_id = room_join.id;
 
-    match event_broker.send(Event::NewConnection{
-        conn_id,
-        player_id: player_id.clone(),
-        player_name: room_join.player_name,
-        room_name: room_join.room_name,
-        x: room_join.x,
-        y: room_join.y,
-        new_room: room_join.new_room,
-        ws_sender: outgoing,
-        shutdown_receiver: connection_shutdown_receiver,
-    }).await {
+    match event_broker
+        .send(Event::NewConnection {
+            conn_id,
+            player_id: player_id.clone(),
+            player_name: room_join.player_name,
+            room_name: room_join.room_name,
+            x: room_join.x,
+            y: room_join.y,
+            new_room: room_join.new_room,
+            ws_sender: outgoing,
+            shutdown_receiver: connection_shutdown_receiver,
+        })
+        .await
+    {
         Ok(h) => h,
         Err(e) => {
             error!("conn_reader {}: event broker down {}", conn_id, e);
-            return Ok(())
+            return Ok(());
         }
     };
 
-    trace!("conn_reader {}: listening for player move messages", conn_id);
+    trace!(
+        "conn_reader {}: listening for player move messages",
+        conn_id
+    );
 
     while let Some(msg) = incoming.next().await {
         let msg = msg?;
         // TODO we get here on a disconnect and presumably fail parsing which ends the task
         trace!("conn_reader {}: parsing new player move message", conn_id);
         let move_msg: PlayerMoveMessage = serde_json::from_str(msg.to_string().as_str())?;
-        match event_broker.send(Event::PlayerMove{
-            from_id: conn_id,
-            player_id: player_id.clone(),
-            x: move_msg.x,
-            y: move_msg.y,
-        }).await {
+        match event_broker
+            .send(Event::PlayerMove {
+                from_id: conn_id,
+                player_id: player_id.clone(),
+                x: move_msg.x,
+                y: move_msg.y,
+            })
+            .await
+        {
             Ok(h) => h,
             Err(e) => {
                 error!("conn_reader {}: event broker down {}", conn_id, e);
-                return Ok(())
+                return Ok(());
             }
         }
     }

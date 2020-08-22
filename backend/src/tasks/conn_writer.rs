@@ -1,24 +1,13 @@
 use async_tungstenite::tungstenite::protocol::Message;
 
-use futures::{
-    select,
-    sink::SinkExt,
-    stream::{
-        StreamExt,
-    },
-    FutureExt,
-};
+use futures::{select, sink::SinkExt, stream::StreamExt, FutureExt};
 
-use log::{trace, error};
+use log::{error, trace};
 
-use crate::{
-    types,
-    ws_messages,
-};
-
+use crate::{types, ws_messages};
 
 pub async fn run(
-    id:  usize,
+    id: usize,
     mut ws_sender: types::WebSocketSender,
     mut disconnect_sender: types::ChannelSender<usize>,
     message_receiver: types::ChannelReceiver<ws_messages::RoomStateMessageEvent>,
@@ -61,10 +50,10 @@ pub async fn run(
     trace!("conn_writer {}: sending disconnect", id);
     // TODO is this unwrap safe?
     match disconnect_sender.send(id).await {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             error!("conn_writer {}: error sending disconnect: {}", id, e);
-        },
+        }
     };
     trace!("conn_writer {}: shutting down", id);
     Ok(())

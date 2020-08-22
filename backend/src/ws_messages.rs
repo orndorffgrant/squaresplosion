@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use std::{
-    collections::hash_map::{HashMap},
-};
+use std::collections::hash_map::HashMap;
 
 use crate::state;
 

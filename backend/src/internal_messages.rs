@@ -10,7 +10,7 @@ pub enum Event {
         y: u32,
         new_room: bool,
         ws_sender: types::WebSocketSender,
-        shutdown_receiver: types::ChannelReceiver<types::Void>
+        shutdown_receiver: types::ChannelReceiver<types::Void>,
     },
     PlayerMove {
         from_id: usize,
