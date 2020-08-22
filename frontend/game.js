@@ -288,25 +288,25 @@ function checkCollisions() {
       if (player.x == allPlayers[i].x && player.y == allPlayers[i].y) {
         if (player.lastMoveTime > allPlayers[i].lastMoveTime) {
           removePlayers([allPlayers[i]]);
-        //   console.log(
-        //     player.id +
-        //       " collided with " +
-        //       allPlayers[i].id +
-        //       ". " +
-        //       allPlayers[i].id +
-        //       " is out"
-        //   );
+          //   console.log(
+          //     player.id +
+          //       " collided with " +
+          //       allPlayers[i].id +
+          //       ". " +
+          //       allPlayers[i].id +
+          //       " is out"
+          //   );
         }
         if (player.lastMoveTime == allPlayers[i].lastMoveTime) {
           removePlayers([allPlayers[i], player]);
-        //   console.log(
-        //     player.id +
-        //       " collided with " +
-        //       allPlayers[i].id +
-        //       ". " +
-        //       "Both players are out!"
-        //   );
-        // }
+          //   console.log(
+          //     player.id +
+          //       " collided with " +
+          //       allPlayers[i].id +
+          //       ". " +
+          //       "Both players are out!"
+          //   );
+        }
       }
     }
   }
