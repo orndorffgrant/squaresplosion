@@ -343,7 +343,6 @@ function addListener() {
     lastTouch = currTouch;
   });
   document.addEventListener("touchend", function (e) {
-    e.preventDefault();
     character.dir = "none";
   });
   document.addEventListener("keydown", function (e) {
