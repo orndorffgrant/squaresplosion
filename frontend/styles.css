@@ -39,11 +39,11 @@ body {
 }
 
 input:checked + .slider {
-  background-color: #2196F3;
+  background-color: #2196f3;
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px #2196F3;
+  box-shadow: 0 0 1px #2196f3;
 }
 
 input:checked + .slider:before {
@@ -56,21 +56,22 @@ input:checked + .slider:before {
   position: fixed;
   bottom: 0;
   width: 100%;
-  padding:5px;
+  padding: 5px;
 }
 
 .option {
-    display: inline-block;
-    padding-right:15px;
-    vertical-align: middle;
+  display: inline-block;
+  padding-right: 15px;
+  vertical-align: middle;
 }
 
 #darkmodeSlider.on {
-    color: white;
+  color: white;
 }
 
-#darkmodeSlider label, #darkmodeSlider i {
-    vertical-align: middle;
+#darkmodeSlider label,
+#darkmodeSlider i {
+  vertical-align: middle;
 }
 
 body {
@@ -94,14 +95,15 @@ body.darkmode button {
 }
 
 .icon.md {
-  height:20px;
-  display:inline-block;
+  height: 20px;
+  display: inline-block;
   position: relative;
   vertical-align: middle;
 }
 
 body.darkmode .icon {
-  filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg) brightness(103%) contrast(103%);
+  filter: invert(96%) sepia(97%) saturate(12%) hue-rotate(237deg)
+    brightness(103%) contrast(103%);
 }
 
 .leaderboard {

@@ -6,32 +6,42 @@ var ws;
  * Attempts to connect to the websocket.
  */
 function attemptConnection() {
-    ws = new WebSocket("wss://ws.squaresplosion.com:9999");
-    ws.onmessage = (e) => {
-        var boardState = JSON.parse(e.data);
-        updateLeaderboard(boardState.player_state);
-        updatePlayerLocations(boardState.player_state);
-        
+  ws = new WebSocket("wss://localhost:9999");
+  ws.onmessage = (e) => {
+    var boardState = JSON.parse(e.data);
+    updateLeaderboard(boardState.player_state);
+    updatePlayerLocations(boardState.player_state);
+  };
+  ws.onopen = () => {
+    var url = new URL(window.location.href);
+    var room = url.searchParams.get("room");
+    document.getElementById("roomCode").innerText = room;
+    document.getElementById("roomLink").innerText =
+      "https://game.squaresplosion.com/splode?room=" + room;
+    var roomOwner = sessionStorage.getItem("newRoom") === "true";
+    var player = sessionStorage.getItem("playerName");
+    if (player === null) {
+      while (player === "" || player === null) {
+        var player = prompt(
+          "Enter your name (we'll save this for future games):"
+        );
+      }
+      sessionStorage.setItem("playerName", player);
     }
-    ws.onopen = () => {
-        var url = new URL(window.location.href);
-        var room = url.searchParams.get("room");
-        document.getElementById("roomCode").innerText = room;
-        document.getElementById("roomLink").innerText = "https://game.squaresplosion.com/splode?room=" + room;
-        var roomOwner = sessionStorage.getItem("newRoom") === "true";
-        var player = sessionStorage.getItem("playerName");
-        if (player === null) {
-            while (player === "" || player === null) {
-                var player = prompt("Enter your name (we'll save this for future games):");
-            }
-            sessionStorage.setItem("playerName", player);
-        }
-        connected = true;
-        ws.send(JSON.stringify({id: character.id, player_name: player, room_name: room, x: character.x, y: character.y, new_room: roomOwner}));
-        sessionStorage.removeItem("newRoom");
-    }
+    connected = true;
+    ws.send(
+      JSON.stringify({
+        id: character.id,
+        player_name: player,
+        room_name: room,
+        x: character.x,
+        y: character.y,
+        new_room: roomOwner,
+      })
+    );
+    sessionStorage.removeItem("newRoom");
+  };
 }
-
 
 /**
  * sendLocation
@@ -40,10 +50,10 @@ function attemptConnection() {
  * @param int xPos : the character x position
  * @param int yPos : the character y position
  */
-function sendLocation(charId, xPos, yPos){
-    if (!connected) {
-        console.error("Not connected");
-        return;
-    }
-    ws.send(JSON.stringify({x: xPos, y: yPos}));
+function sendLocation(charId, xPos, yPos) {
+  if (!connected) {
+    console.error("Not connected");
+    return;
+  }
+  ws.send(JSON.stringify({ x: xPos, y: yPos }));
 }
