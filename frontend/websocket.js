@@ -6,7 +6,7 @@ var ws;
  * Attempts to connect to the websocket.
  */
 function attemptConnection() {
-  ws = new WebSocket("wss://localhost:9999");
+  ws = new WebSocket("wss://ws.squaresplosion.com:9999");
   ws.onmessage = (e) => {
     var boardState = JSON.parse(e.data);
     updateLeaderboard(boardState.player_state);
