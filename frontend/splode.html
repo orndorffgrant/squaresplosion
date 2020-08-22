@@ -23,6 +23,12 @@
         margin: auto;
         line-height: 2;
       }
+      .hidden {
+        display: none;
+      }
+      .respawn {
+        text-align: center;
+      }
       .share__name-container {
         display: flex;
         align-items: baseline;
@@ -66,6 +72,12 @@
       >
         Sorry, your browser does not support this. Try downloading Firefox.
       </canvas>
+      <div class="respawn hidden" id="respawn">
+        <div class="respawn__message">You sploded!</div>
+        <button class="respawn__button" onclick="location.reload()">
+          Jump back in!
+        </button>
+      </div>
       <div class="share">
         <div class="share__message">
           Invite your friends to play!

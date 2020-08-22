@@ -235,6 +235,7 @@ function updateGameArea() {
     character.update();
   } else if (!character.exploding && character.explodeParticles.length == 0) {
     character.getExplodeParticles();
+    document.getElementById("respawn").classList.remove("hidden");
   } else if (character.exploding && character.explodeParticles.length != 0) {
     character.explodeAnimation();
   }
@@ -275,7 +276,7 @@ function removePlayers(players) {
  * Checks to see if any players collided.
  */
 function checkCollisions() {
-  const allPlayers = [...otherPlayers, character];
+  const allPlayers = [character, ...otherPlayers];
   for (var j = 0; j < allPlayers.length; j++) {
     var player = allPlayers[j];
     if (!player.active) {
