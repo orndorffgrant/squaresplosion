@@ -2,7 +2,9 @@
 
 Squaresplosion is a game about squares... and explosions. Move around to increase your score. Run into other player squares to explode them. Be careful though, if another square runs into you, you explode! 
 
-Hosted at https://game.squaresplosion.com/
+<p align="center">
+    <img src="./demo.gif" alt="gif demonstrating gameplay">
+</p>
 
 ## FAQ
 
