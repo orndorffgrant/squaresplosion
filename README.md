@@ -8,6 +8,10 @@ Squaresplosion is a game about squares... and explosions. Move around to increas
 
 ## FAQ
 
+### Link? Where can I play it?
+
+We took down the server after a while so there isn't a link we can give you anymore. If you do want to play, all the code is here and open source, so you just need to get it running on your own server. It ran pretty well on the smallest Digital Ocean droplet when we were hosting it.
+
 ### How does it work?
 
 The frontend is simple static HTML/CSS/JS. The game is on an HTML5 Canvas. Multiplayer coordination is handled via a central stateful websocket server, written in Rust. All state is in-memory.
